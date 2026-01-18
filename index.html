@@ -110,3 +110,469 @@ function updateOutputProfile() {
   });
 }
 </script>
+<script>
+/* =========================
+   OUTPUTS — TEMPLATE ENGINE
+   Block 2 (SAFE version)
+   - Does NOT overwrite Block 1 functions
+   ========================= */
+
+(function(){
+  function fmtUSD(x){
+    const n = Number(x);
+    const v = Number.isFinite(n) ? n : 0;
+    return v.toLocaleString("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0});
+  }
+  function fmtPct(x){
+    const n = Number(x);
+    const v = Number.isFinite(n) ? n : 0;
+    return (v*100).toFixed(1) + "%";
+  }
+  function vNum(id, fallback=0){
+    const el = document.getElementById(id);
+    if (!el) return fallback;
+    const n = Number(el.value);
+    return Number.isFinite(n) ? n : fallback;
+  }
+  function vStr(id, fallback=""){
+    const el = document.getElementById(id);
+    if (!el) return fallback;
+    return (el.value || fallback).toString();
+  }
+
+  function getFlipNumbers(){
+    const purchase = vNum("purchase",0);
+    const arv = vNum("arv",0);
+    const months = vNum("months",0);
+
+    const rehab = vNum("rehab",0);
+    const salePct = vNum("sale_pct",0);
+
+    const ltv = vNum("hm_ltv",0);
+    const hmRate = vNum("hm_rate",0);
+    const hmPoints = vNum("hm_points",0);
+
+    const hmLoan = purchase * ltv;
+    const hmInterest = hmLoan * hmRate * (months/12);
+    const hmPointCost = hmLoan * hmPoints;
+    const saleCosts = arv * salePct;
+
+    const totalCosts = purchase + rehab + hmInterest + hmPointCost + saleCosts;
+    const netProfit = arv - totalCosts;
+
+    const margin = (arv > 0) ? ((arv - totalCosts)/arv) : 0;
+
+    return {
+      purchase, arv, months, rehab,
+      salePct, saleCosts,
+      ltv, hmRate, hmPoints,
+      hmLoan, hmInterest, hmPointCost,
+      totalCosts, netProfit, margin
+    };
+  }
+
+  function getHoldingCosts(holdMonths){
+    // If these fields don't exist in your current app, they resolve to 0.
+    const taxM  = vNum("hc_tax_m",0);
+    const insM  = vNum("hc_ins_m",0);
+    const utilM = vNum("hc_util_m",0);
+    const hoaM  = vNum("hc_hoa_m",0);
+    const lawnM = vNum("hc_lawn_m",0);
+
+    const monthly = taxM + insM + utilM + hoaM + lawnM;
+    const total = monthly * (Number.isFinite(holdMonths) ? holdMonths : 0);
+    return { taxM, insM, utilM, hoaM, lawnM, monthly, total };
+  }
+
+  function splitPercents(splitStr){
+    const raw = (splitStr || "60/40").toString().split("/");
+    const a = Number(raw[0]); const b = Number(raw[1]);
+    const sum = (Number.isFinite(a)?a:0) + (Number.isFinite(b)?b:0);
+    if (sum <= 0) return {partner:0.6, operator:0.4, label:"60/40"};
+    return {partner:a/sum, operator:b/sum, label:`${a}/${b}`};
+  }
+
+  function getJVInfo(flip){
+    const dealName = vStr("jv_name","").trim();
+    const market = vStr("jv_market","").trim();
+    const contractStatus = vStr("jv_contract_status","Signed");
+    const contractType = vStr("jv_contract_type","Purchase Contract");
+    const assignmentFee = vNum("jv_assignment_fee",0);
+
+    const overrideMonths = vNum("jv_months_override",0);
+    const holdMonths = (overrideMonths > 0) ? overrideMonths : flip.months;
+
+    const pref = vNum("jv_pref",0.10);
+    const split = splitPercents(vStr("jv_split","60/40"));
+
+    const equityInput = vNum("jv_equity",0);
+    const holding = getHoldingCosts(holdMonths);
+
+    const acquisition = flip.purchase + Math.max(0, assignmentFee);
+    const selling = flip.saleCosts;
+    const totalProjectCostReal = acquisition + flip.rehab + holding.total + selling;
+
+    // Debt payoff approximation: HM principal + accrued interest + points.
+    const debtPayoff = flip.hmLoan + flip.hmInterest + flip.hmPointCost;
+
+    const equityNeeded = Math.max(0, totalProjectCostReal - debtPayoff);
+    const equityUsed = (equityInput > 0) ? equityInput : equityNeeded;
+
+    const capitalReturned = equityUsed;
+    const prefEarned = equityUsed * pref * (holdMonths/12);
+    const profitToSplit = Math.max(0, flip.netProfit - prefEarned);
+    const partnerShare = profitToSplit * split.partner;
+    const operatorShare = profitToSplit * split.operator;
+
+    const partnerTotalCash = capitalReturned + prefEarned + partnerShare;
+
+    const roiTotal = (equityUsed > 0) ? ((partnerTotalCash - equityUsed)/equityUsed) : 0;
+    const roiAnnual = (equityUsed > 0 && holdMonths > 0) ? (roiTotal * (12/holdMonths)) : 0;
+
+    return {
+      dealName, market, contractStatus, contractType,
+      assignmentFee, holdMonths,
+      pref, split,
+      holding,
+      acquisition, selling,
+      totalProjectCostReal,
+      debtPayoff,
+      equityNeeded, equityUsed,
+      capitalReturned, prefEarned, profitToSplit, partnerShare, operatorShare, partnerTotalCash,
+      roiTotal, roiAnnual
+    };
+  }
+
+  function setSectionHTML(sectionId, html){
+    const el = document.getElementById(sectionId);
+    if (!el) return;
+    el.innerHTML = html;
+  }
+
+  function setEmailBlock(emailText){
+    const sec = document.getElementById("section-email");
+    if (!sec) return;
+
+    const safe = (emailText || "")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;");
+
+    sec.innerHTML = `
+      <div style="margin-bottom:10px;">
+        <div style="font-size:12px;opacity:.75;margin-bottom:6px;">Copy-paste ready</div>
+        <pre id="outputEmailText" style="white-space:pre-wrap;margin:0;font-family:inherit;border:1px solid #e5e7eb;border-radius:10px;padding:12px;background:#fff;">${safe}</pre>
+      </div>
+      <button class="primary" id="btnCopyEmail">Copy Email</button>
+    `;
+
+    const btn = document.getElementById("btnCopyEmail");
+    if (btn){
+      btn.onclick = () => {
+        const text = (document.getElementById("outputEmailText")?.innerText || "");
+        navigator.clipboard.writeText(text).then(()=>alert("Copied")).catch(()=>{
+          prompt("Copy:", text);
+        });
+      };
+    }
+  }
+
+  function openDefaults(profile){
+    // Close all sections
+    document.querySelectorAll(".accordion-content").forEach(c => c.classList.remove("active"));
+
+    const open = (id) => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add("active");
+    };
+
+    // Always open Deal Snapshot
+    open("section-deal");
+
+    if (profile === "investor"){
+      open("section-email"); open("section-returns"); open("section-capital"); open("section-uses");
+    } else if (profile === "lender"){
+      open("section-email"); open("section-risk"); open("section-capital");
+    } else if (profile === "operator"){
+      open("section-email"); open("section-returns");
+    } else if (profile === "jv"){
+      open("section-email"); open("section-returns"); open("section-jv");
+    }
+  }
+
+  // MAIN render
+  function outputsRender(){
+    const profile = document.getElementById("outputProfile")?.value || "investor";
+
+    const flip = getFlipNumbers();
+    const jv = getJVInfo(flip);
+
+    const cityState = (jv.market || "City, State");
+    const dealName = (jv.dealName || "Deal");
+
+    const signedText = (jv.contractStatus === "Signed")
+      ? "✅ Contract Signed"
+      : `⚠️ Contract Status: ${jv.contractStatus}`;
+
+    // Deal Snapshot
+    setSectionHTML("section-deal", `
+      <div class="kpi">Deal<br><strong>${dealName}</strong><div class="muted">${cityState}</div></div>
+
+      <div class="row2">
+        <div class="kpi">Purchase<br><strong>${fmtUSD(flip.purchase)}</strong></div>
+        <div class="kpi">ARV / Sale Price<br><strong>${fmtUSD(flip.arv)}</strong></div>
+      </div>
+
+      <div class="row2">
+        <div class="kpi">Holding Period<br><strong>${flip.months || 0} months</strong></div>
+        <div class="kpi">Margin vs ARV (rule ≥ 25%)<br><strong>${fmtPct(flip.margin)}</strong></div>
+      </div>
+
+      <div class="kpi">${signedText}</div>
+    `);
+
+    // Capital Stack
+    setSectionHTML("section-capital", `
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Source</th><th>Amount</th><th>Priority</th></tr></thead>
+          <tbody>
+            <tr><td>Senior Debt (Hard money)</td><td>${fmtUSD(flip.hmLoan)}</td><td>1st</td></tr>
+            <tr><td>Equity Partner</td><td>${fmtUSD(jv.equityUsed)}</td><td>2nd</td></tr>
+            <tr><td>Operator Cash</td><td>${fmtUSD(0)}</td><td>Last</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="muted">Debt is repaid first at closing, then equity distributions follow the waterfall.</div>
+    `);
+
+    // Use of Funds
+    setSectionHTML("section-uses", `
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Use of Funds</th><th>Amount</th></tr></thead>
+          <tbody>
+            <tr><td>Acquisition (purchase + assignment)</td><td>${fmtUSD(jv.acquisition)}</td></tr>
+            <tr><td>Renovation (worst case)</td><td>${fmtUSD(flip.rehab)}</td></tr>
+            <tr><td>Holding costs (monthly × months)</td><td>${fmtUSD(jv.holding.total)}</td></tr>
+            <tr><td>Selling costs (agent + closing)</td><td>${fmtUSD(jv.selling)}</td></tr>
+            <tr><td><strong>Total Project Cost</strong></td><td><strong>${fmtUSD(jv.totalProjectCostReal)}</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="muted">Holding monthly: ${fmtUSD(jv.holding.monthly)} (tax/ins/utilities/other).</div>
+    `);
+
+    // Returns & Waterfall
+    setSectionHTML("section-returns", `
+      <div class="row2">
+        <div class="kpi">Net Profit (before split)<br><strong>${fmtUSD(flip.netProfit)}</strong></div>
+        <div class="kpi">Hard Money Interest + Points<br><strong>${fmtUSD(flip.hmInterest + flip.hmPointCost)}</strong></div>
+      </div>
+
+      <div class="kpi">JV Waterfall (Partner paid before Operator)</div>
+
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Step</th><th>Rule</th><th>Partner</th><th>Operator</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Return of capital</td><td>${fmtUSD(jv.capitalReturned)}</td><td>${fmtUSD(0)}</td></tr>
+            <tr><td>2</td><td>Preferred return (${(jv.pref*100).toFixed(1)}% annual)</td><td>${fmtUSD(jv.prefEarned)}</td><td>${fmtUSD(0)}</td></tr>
+            <tr><td>3</td><td>Remaining profit split (${jv.split.label} Partner/Operator)</td><td>${fmtUSD(jv.partnerShare)}</td><td>${fmtUSD(jv.operatorShare)}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="row2">
+        <div class="kpi">Partner Total Cash Back<br><strong>${fmtUSD(jv.partnerTotalCash)}</strong></div>
+        <div class="kpi">Your Pocket (Operator)<br><strong>${fmtUSD(jv.operatorShare)}</strong></div>
+      </div>
+
+      <div class="row2">
+        <div class="kpi">Partner ROI (total)<br><strong>${fmtPct(jv.roiTotal)}</strong></div>
+        <div class="kpi">Partner ROI (annualized)<br><strong>${fmtPct(jv.roiAnnual)}</strong></div>
+      </div>
+    `);
+
+    // Risk & Exit
+    setSectionHTML("section-risk", `
+      <div class="kpi">Risk & Exit (Professional Summary)</div>
+      <ul style="margin:0;padding-left:18px;">
+        <li><strong>Margin discipline:</strong> target ≥ 25% of ARV (current: ${fmtPct(flip.margin)})</li>
+        <li><strong>Conservative underwriting:</strong> worst-case rehab + holding costs included</li>
+        <li><strong>Debt priority:</strong> senior debt repaid first at closing</li>
+        <li><strong>Contract control:</strong> ${signedText.replace("✅ ","")}</li>
+        <li><strong>Primary exit:</strong> retail sale at ARV</li>
+        <li><strong>Secondary exit:</strong> refinance / alternative disposition if needed</li>
+      </ul>
+    `);
+
+    // JV placeholder (Block 3 will replace this)
+    setSectionHTML("section-jv", `
+      <div class="kpi">JV Partner Mode</div>
+      <div class="muted">Next block adds Buyer Relationship selector (JV vs Wholesale), deal flow steps, and legal checklist.</div>
+    `);
+
+    // Email per profile
+    let subject = "";
+    let body = "";
+
+    if (profile === "investor"){
+      subject = `Fix & Flip JV Opportunity — ${cityState}`;
+      body =
+`Subject: ${subject}
+
+Hello [Name],
+
+I’m sharing a conservatively underwritten fix & flip opportunity in ${cityState}.
+The deal targets a margin above 25% of ARV and uses a partner-first waterfall structure to protect investor capital.
+
+Key numbers:
+- Purchase: ${fmtUSD(flip.purchase)}
+- ARV: ${fmtUSD(flip.arv)}
+- Rehab (worst case): ${fmtUSD(flip.rehab)}
+- Holding: ${flip.months || 0} months
+- Net profit (before split): ${fmtUSD(flip.netProfit)}
+
+Waterfall:
+1) Capital returned first
+2) Preferred return (${(jv.pref*100).toFixed(1)}% annual)
+3) Remaining profit split ${jv.split.label} (Partner/Operator)
+
+If you’d like, I can send the full breakdown and walk you through the structure.
+
+Best regards,
+[Your Name]`;
+    }
+
+    if (profile === "lender"){
+      const ltvNow = (flip.arv > 0) ? (flip.hmLoan / flip.arv) : 0;
+      subject = `Loan Request — Fix & Flip — ${cityState}`;
+      body =
+`Subject: ${subject}
+
+Hello [Name],
+
+I’m submitting a fix & flip project in ${cityState} for lending consideration.
+
+Loan snapshot:
+- Purchase: ${fmtUSD(flip.purchase)}
+- ARV: ${fmtUSD(flip.arv)}
+- Requested loan: ${fmtUSD(flip.hmLoan)}
+- Approx. LTV (loan/ARV): ${fmtPct(ltvNow)}
+- Term: ${flip.months || 0} months
+
+Underwriting notes:
+- Conservative budget (worst case rehab + holding)
+- Strong ARV margin: ${fmtPct(flip.margin)} (target ≥ 25%)
+- Clear primary exit: retail resale (backup available)
+
+If this fits your box, I can provide the full package (scope, comps, budget, timeline).
+
+Best regards,
+[Your Name]`;
+    }
+
+    if (profile === "operator"){
+      subject = `Execution Partnership — Contract ${jv.contractStatus === "Signed" ? "Signed" : "Status"} — ${cityState}`;
+      const statusLine = (jv.contractStatus === "Signed")
+        ? "The property is secured under a signed purchase agreement."
+        : `Contract status: ${jv.contractStatus}.`;
+      body =
+`Subject: ${subject}
+
+Hi [Name],
+
+I’m reaching out regarding a fix & flip project in ${cityState}.
+${statusLine}
+
+Project snapshot:
+- Purchase: ${fmtUSD(flip.purchase)}
+- ARV: ${fmtUSD(flip.arv)}
+- Rehab budget (worst case): ${fmtUSD(flip.rehab)}
+- Timeline: ${flip.months || 0} months
+
+Compensation structure:
+- Profit split: ${jv.split.label} (Partner/Operator)
+- Estimated operator earnings (current model): ${fmtUSD(jv.operatorShare)}
+- Paid at exit (sale closing)
+
+If you’re open, I’d like to review scope and execution plan to confirm timeline and budget.
+
+Best,
+[Your Name]`;
+    }
+
+    if (profile === "jv"){
+      subject = `JV Partner Opportunity — ${cityState} — ${jv.contractStatus === "Signed" ? "Contract Signed" : "Contract Pending"}`;
+      body =
+`Subject: ${subject}
+
+Hello [Name],
+
+I’m sharing a JV partnership opportunity in ${cityState}. ${jv.contractStatus === "Signed" ? "The deal is secured under contract." : "The deal is currently in process."}
+
+Core numbers:
+- Purchase: ${fmtUSD(flip.purchase)}
+- ARV: ${fmtUSD(flip.arv)}
+- Rehab (worst case): ${fmtUSD(flip.rehab)}
+- Holding: ${jv.holdMonths} months
+- Net profit (before split): ${fmtUSD(flip.netProfit)}
+
+Structure:
+- Preferred return: ${(jv.pref*100).toFixed(1)}% annual
+- Profit split after pref: ${jv.split.label} (Partner/Operator)
+
+Next section in the app (Buyer Relationship) will show the exact process depending on JV partnership vs wholesale assignment.
+
+Best regards,
+[Your Name]`;
+    }
+
+    setEmailBlock(body);
+
+    // Show/hide JV-only section (use Block 1 behavior if present)
+    try{
+      document.querySelectorAll(".jv-only").forEach(el => {
+        el.style.display = (profile === "jv") ? "block" : "none";
+      });
+    }catch(e){}
+
+    // Open default accordions
+    openDefaults(profile);
+  }
+
+  // Handle profile changes (called by select onchange)
+  window.outputsOnProfileChange = function(){
+    outputsRender();
+  };
+
+  // If Block 1 onchange is still pointing to updateOutputProfile(),
+  // we also hook into that by redefining it ONLY IF it doesn't exist.
+  if (typeof window.updateOutputProfile !== "function"){
+    window.updateOutputProfile = function(){
+      window.outputsOnProfileChange();
+    };
+  } else {
+    // If it exists, we keep it and also render outputs after it runs.
+    const prev = window.updateOutputProfile;
+    window.updateOutputProfile = function(){
+      try{ prev(); }catch(e){}
+      window.outputsOnProfileChange();
+    };
+  }
+
+  // Auto refresh on any input change in the app
+  function wireAutoRefresh(){
+    document.querySelectorAll("input,select").forEach(el=>{
+      el.addEventListener("input", ()=>outputsRender());
+      el.addEventListener("change", ()=>outputsRender());
+    });
+  }
+
+  window.addEventListener("load", ()=>{
+    wireAutoRefresh();
+    outputsRender();
+  });
+
+})();
+</script>
