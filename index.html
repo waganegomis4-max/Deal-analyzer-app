@@ -1,969 +1,112 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Deal Analyzer Pro</title>
+<!-- ===================== -->
+<!-- OUTPUTS TAB -->
+<!-- ===================== -->
 
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#111111">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<div class="card">
+  <h2>Outputs</h2>
+
+  <label>Select Profile</label>
+  <select id="outputProfile" onchange="updateOutputProfile()">
+    <option value="investor">Investor</option>
+    <option value="lender">Lender</option>
+    <option value="operator">Operator</option>
+    <option value="jv">JV Partner</option>
+  </select>
+</div>
+
+<!-- Accordion Section -->
+<div class="card accordion">
+
+  <button class="accordion-btn" onclick="toggleAccordion(this)">
+    Email Preview
+  </button>
+  <div class="accordion-content" id="section-email">
+    <p><em>Email content will appear here.</em></p>
+    <button class="primary">Copy Email</button>
+  </div>
+
+  <button class="accordion-btn" onclick="toggleAccordion(this)">
+    Deal Snapshot
+  </button>
+  <div class="accordion-content" id="section-deal">
+    <p><em>Deal summary will appear here.</em></p>
+  </div>
+
+  <button class="accordion-btn" onclick="toggleAccordion(this)">
+    Capital Stack
+  </button>
+  <div class="accordion-content" id="section-capital">
+    <p><em>Capital stack details.</em></p>
+  </div>
+
+  <button class="accordion-btn" onclick="toggleAccordion(this)">
+    Use of Funds
+  </button>
+  <div class="accordion-content" id="section-uses">
+    <p><em>Use of funds breakdown.</em></p>
+  </div>
+
+  <button class="accordion-btn" onclick="toggleAccordion(this)">
+    Returns & Waterfall
+  </button>
+  <div class="accordion-content" id="section-returns">
+    <p><em>Returns and profit distribution.</em></p>
+  </div>
+
+  <button class="accordion-btn" onclick="toggleAccordion(this)">
+    Risk & Exit
+  </button>
+  <div class="accordion-content" id="section-risk">
+    <p><em>Risk mitigation and exit strategy.</em></p>
+  </div>
+
+  <!-- JV ONLY -->
+  <button class="accordion-btn jv-only" onclick="toggleAccordion(this)">
+    Buyer Relationship & Deal Flow
+  </button>
+  <div class="accordion-content jv-only" id="section-jv">
+    <p><em>JV / Wholesale logic will appear here.</em></p>
+  </div>
+
+</div>
 
 <style>
-  body{
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    margin:0; background:#f6f7f9; color:#111;
-  }
-  header{ padding:16px; background:#111; color:#fff; }
-  header h1{ font-size:18px; margin:0 0 6px 0; }
-  header p{ margin:0; font-size:13px; opacity:.8; }
-  main{ padding:14px; max-width:980px; margin:auto; }
+.accordion-btn {
+  width: 100%;
+  text-align: left;
+  padding: 12px;
+  border: none;
+  background: #f2f4f7;
+  font-weight: 600;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
 
-  .card{
-    background:#fff; border-radius:12px; padding:14px; margin-bottom:12px;
-    box-shadow:0 1px 3px rgba(0,0,0,.06);
-  }
-  h2{ font-size:15px; margin:0 0 10px 0; }
-  label{ font-size:12px; display:block; margin-bottom:4px; }
-  input, select, textarea{
-    width:100%; padding:12px; border-radius:10px; border:1px solid #ccc;
-    margin-bottom:10px; font-size:14px; box-sizing:border-box;
-  }
-  textarea{ min-height:180px; font-size:13px; }
-  button{
-    padding:12px 14px; border-radius:10px; border:none; font-size:14px;
-    font-weight:600; margin-top:8px;
-  }
-  .primary{ background:#111; color:#fff; }
-  .secondary{ background:#e9edf2; color:#111; }
-  .btnrow{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
-  .tab{ display:none; }
-  .tab.active{ display:block; }
-  .kpi{
-    background:#f2f4f7; padding:12px; border-radius:12px; margin-bottom:8px;
-  }
-  .kpi strong{ font-size:18px; }
-  .muted{ font-size:12px; opacity:.75; margin-top:-6px; margin-bottom:10px; }
-  .warn{ background:#fff2f2; border:1px solid #ffd1d1; padding:10px; border-radius:10px; }
-  .scroll{ overflow:auto; }
-  table{ border-collapse:collapse; width:100%; font-size:13px; }
-  th, td{ border:1px solid #ddd; padding:8px; text-align:right; }
-  th:first-child, td:first-child{ text-align:left; }
-  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  @media (max-width:720px){ .row2{ grid-template-columns:1fr; } }
+.accordion-content {
+  display: none;
+  padding: 10px 0 16px 0;
+}
 
-  /* Print: show only JV pitch block */
-  @media print{
-    header, .btnrow, .tab{ display:none !important; }
-    body.print-jv #print_jv { display:block !important; }
-    body.print-jv main { padding:0; }
-  }
-  #print_jv{ display:none; }
+.accordion-content.active {
+  display: block;
+}
+
+.jv-only {
+  display: none;
+}
 </style>
-</head>
-
-<body>
-<header>
-  <h1>Deal Analyzer Pro</h1>
-  <p>Fix & Flip — Hard Money • Private Lender • JV • Seller Finance</p>
-</header>
-
-<main>
-
-<div class="btnrow">
-  <button class="secondary" id="btn_operator" onclick="showTab('operator')">Operator</button>
-  <button class="secondary" id="btn_investor" onclick="showTab('investor')">Investor</button>
-  <button class="secondary" id="btn_lender" onclick="showTab('lender')">Lender</button>
-  <button class="secondary" id="btn_jv" onclick="showTab('jv')">JV Partner</button>
-</div>
-
-<!-- OPERATOR TAB -->
-<div id="tab_operator" class="tab active">
-
-  <div class="card">
-    <h2>1) Deal</h2>
-    <label>Purchase Price</label>
-    <input id="purchase" type="number" placeholder="175000">
-
-    <label>ARV (After Repair Value)</label>
-    <input id="arv" type="number" placeholder="319000">
-
-    <label>Project Duration (months)</label>
-    <input id="months" type="number" placeholder="5">
-  </div>
-
-  <div class="card">
-    <h2>2) Hard Money</h2>
-    <label>LTV</label>
-    <input id="hm_ltv" type="number" step="0.01" placeholder="0.70">
-
-    <label>Annual Interest Rate</label>
-    <input id="hm_rate" type="number" step="0.01" placeholder="0.10">
-
-    <label>Points</label>
-    <input id="hm_points" type="number" step="0.01" placeholder="0.03">
-  </div>
-
-  <div class="card">
-    <h2>3) Rehab</h2>
-    <label>Rehab Budget (worst case)</label>
-    <input id="rehab" type="number" placeholder="55000">
-  </div>
-
-  <div class="card">
-    <h2>4) Sale</h2>
-    <label>Agent Commission + Closing Costs (%)</label>
-    <input id="sale_pct" type="number" step="0.01" placeholder="0.07">
-  </div>
-
-  <div class="card">
-    <h2>Flip Results</h2>
-
-    <div class="kpi">Hard Money Loan<br><strong id="hmLoan">$0</strong></div>
-    <div class="kpi">Total Costs<br><strong id="totalCosts">$0</strong></div>
-    <div class="kpi">Net Profit<br><strong id="profit">$0</strong></div>
-
-    <div class="kpi">
-      Margin Rule (>= 25% ARV) — (ARV − Total Costs) / ARV<br>
-      <strong id="marginPct">0%</strong>
-    </div>
-
-    <div id="tightWarn" class="warn" style="display:none;">
-      ⚠️ Deal is too tight based on your rule (margin &lt; 25% of ARV). Seller financing does NOT fix a bad deal.
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>Seller Financing — Inputs</h2>
-
-    <label>Seller Price (Seller Financing Sale Price)</label>
-    <input id="sf_price" type="number" placeholder="(leave empty = ARV)">
-    <div class="muted">If empty, the app uses ARV.</div>
-
-    <label>Payment Type</label>
-    <select id="sf_type">
-      <option value="interestOnlyBalloon">Interest-Only + Balloon</option>
-      <option value="amortizing">Amortizing (Principal + Interest)</option>
-    </select>
-
-    <label>Down Payment % (ex: 0.20)</label>
-    <input id="sf_down" type="number" step="0.01" placeholder="0.20">
-
-    <label>Annual Interest Rate (ex: 0.09)</label>
-    <input id="sf_rate" type="number" step="0.01" placeholder="0.09">
-
-    <label>Term (months)</label>
-    <input id="sf_term" type="number" placeholder="24">
-  </div>
-
-  <div class="card">
-    <h2>Seller Financing — Results</h2>
-
-    <div class="kpi">Seller Price Used<br><strong id="sfPriceUsed">$0</strong></div>
-    <div class="kpi">Down Payment (Immediate Cash)<br><strong id="sfDownCash">$0</strong></div>
-    <div class="kpi">Loan Amount (Note)<br><strong id="sfLoan">$0</strong></div>
-    <div class="kpi">Monthly Payment / Monthly Interest<br><strong id="sfMonthly">$0</strong></div>
-    <div class="kpi">Total Interest Over Term<br><strong id="sfTotalInterest">$0</strong></div>
-    <div class="kpi">Total Cash Received<br><strong id="sfTotalCash">$0</strong></div>
-  </div>
-
-  <div class="card">
-    <h2>Monthly Schedule (Seller Financing)</h2>
-    <div class="scroll">
-      <table>
-        <thead>
-          <tr>
-            <th style="text-align:center;">Month</th>
-            <th>Payment</th>
-            <th>Interest</th>
-            <th>Principal</th>
-            <th>Balance</th>
-          </tr>
-        </thead>
-        <tbody id="sf_table"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>Stress Test (Default Scenario)</h2>
-
-    <label>Default at Month (ex: 6 = stops before paying month 6)</label>
-    <input id="default_month" type="number" placeholder="6">
-
-    <label>Estimated Foreclosure Cost</label>
-    <input id="foreclosure_cost" type="number" placeholder="15000">
-
-    <div class="kpi">Cash Received Before Default<br><strong id="st_cash">$0</strong></div>
-    <div class="kpi">Interest Collected Before Default<br><strong id="st_int">$0</strong></div>
-    <div class="kpi">Principal Paid Before Default<br><strong id="st_prin">$0</strong></div>
-    <div class="kpi">Remaining Balance at Default<br><strong id="st_balance">$0</strong></div>
-    <div class="kpi">Net Cash After Costs (Est.)<br><strong id="st_net">$0</strong></div>
-  </div>
-
-</div>
-
-<!-- INVESTOR TAB -->
-<div id="tab_investor" class="tab">
-  <div class="card">
-    <h2>Investor Summary</h2>
-    <textarea id="summary" readonly></textarea>
-    <button class="primary" onclick="copyText('summary')">Copy</button>
-    <div class="muted">Paste into WhatsApp or email.</div>
-  </div>
-</div>
-
-<!-- LENDER TAB -->
-<div id="tab_lender" class="tab">
-  <div class="card">
-    <h2>Lender Checklist (Fill this before you sign)</h2>
-    <div class="muted">Use this to compare lenders objectively (hard money and private lenders).</div>
-    <div class="scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>Category</th>
-            <th>Question</th>
-            <th>Lender Answer</th>
-            <th>OK / NO</th>
-          </tr>
-        </thead>
-        <tbody id="lender_table"></tbody>
-      </table>
-    </div>
-    <div class="muted">Tip: screenshot this tab when you get answers from a lender.</div>
-  </div>
-</div>
-
-<!-- JV PARTNER TAB -->
-<div id="tab_jv" class="tab">
-
-  <div class="card">
-    <h2>JV Partner — Settings</h2>
-
-    <div class="row2">
-      <div>
-        <label>Deal Name</label>
-        <input id="jv_name" placeholder="Tacoma Flip #12">
-      </div>
-      <div>
-        <label>Market (City / Zip)</label>
-        <input id="jv_market" placeholder="Tacoma, WA 984xx">
-      </div>
-    </div>
-
-    <div class="row2">
-      <div>
-        <label>Contract Status</label>
-        <select id="jv_contract_status">
-          <option value="Signed">Contract Signed</option>
-          <option value="Pending">Pending</option>
-          <option value="Not Signed">Not Signed</option>
-        </select>
-      </div>
-      <div>
-        <label>Contract Type</label>
-        <select id="jv_contract_type">
-          <option value="Purchase Contract">Purchase Contract</option>
-          <option value="Assignment">Assignment</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="row2">
-      <div>
-        <label>Assignment Fee (if Assignment)</label>
-        <input id="jv_assignment_fee" type="number" placeholder="0">
-      </div>
-      <div>
-        <label>Holding Period Override (months)</label>
-        <input id="jv_months_override" type="number" placeholder="(empty = use Deal months)">
-        <div class="muted">If empty, the JV uses the Deal holding period.</div>
-      </div>
-    </div>
-
-    <div class="row2">
-      <div>
-        <label>Preferred Return (annual, ex: 0.10)</label>
-        <input id="jv_pref" type="number" step="0.01" placeholder="0.10">
-      </div>
-      <div>
-        <label>Profit Split (Partner / Operator)</label>
-        <select id="jv_split">
-          <option value="50/50">50 / 50</option>
-          <option value="60/40" selected>60 / 40</option>
-          <option value="70/30">70 / 30</option>
-          <option value="40/60">40 / 60</option>
-        </select>
-        <div class="muted">Split applies AFTER capital + preferred return.</div>
-      </div>
-    </div>
-
-    <label>Equity Partner Cash Invested (optional)</label>
-    <input id="jv_equity" type="number" placeholder="(leave empty = auto equity needed)">
-    <div class="muted">If blank, the app estimates equity needed from Sources vs Uses.</div>
-
-    <label>Notes</label>
-    <input id="jv_notes" placeholder="Backup exit: refinance • fixed-price GC">
-  </div>
-
-  <div class="card">
-    <h2>JV Partner — Deal Snapshot (auto)</h2>
-
-    <div class="row2">
-      <div class="kpi">Purchase Price<br><strong id="jv_purchase">$0</strong></div>
-      <div class="kpi">ARV (Sale Price)<br><strong id="jv_arv">$0</strong></div>
-    </div>
-
-    <div class="row2">
-      <div class="kpi">Holding Period<br><strong id="jv_hold">0 months</strong></div>
-      <div class="kpi">Margin vs ARV<br><strong id="jv_margin">0%</strong></div>
-    </div>
-
-    <div class="kpi">Net Profit (before JV split)<br><strong id="jv_profit">$0</strong></div>
-    <div class="muted">Based on your Flip module (ARV − total costs).</div>
-  </div>
-
-  <!-- Holding Costs table -->
-  <div class="card">
-    <h2>Holding Costs (Monthly → Total)</h2>
-
-    <div class="row2">
-      <div>
-        <label>Property Taxes (monthly)</label>
-        <input id="hc_tax_m" type="number" placeholder="450">
-      </div>
-      <div>
-        <label>Insurance (monthly)</label>
-        <input id="hc_ins_m" type="number" placeholder="180">
-      </div>
-    </div>
-
-    <div class="row2">
-      <div>
-        <label>Utilities (monthly)</label>
-        <input id="hc_util_m" type="number" placeholder="250">
-      </div>
-      <div>
-        <label>HOA (monthly, optional)</label>
-        <input id="hc_hoa_m" type="number" placeholder="0">
-      </div>
-    </div>
-
-    <div class="row2">
-      <div>
-        <label>Lawn/Snow (monthly, optional)</label>
-        <input id="hc_lawn_m" type="number" placeholder="0">
-      </div>
-      <div class="kpi">
-        Total Monthly Holding<br><strong id="hc_monthly">$0</strong>
-      </div>
-    </div>
-
-    <div class="kpi">
-      Total Holding Costs (Monthly × Holding Months)<br><strong id="hc_total">$0</strong>
-    </div>
-
-    <div class="muted">This makes your JV pitch “real-world” (no hidden holding costs).</div>
-  </div>
-
-  <!-- Debt Payoff table -->
-  <div class="card">
-    <h2>Debt Payoff at Sale (paid first)</h2>
-
-    <div class="row2">
-      <div>
-        <label>Private Lender Principal (optional)</label>
-        <input id="pl_principal" type="number" placeholder="0">
-      </div>
-      <div>
-        <label>Private Lender Annual Rate (ex: 0.12)</label>
-        <input id="pl_rate" type="number" step="0.01" placeholder="0">
-      </div>
-    </div>
-
-    <div class="row2">
-      <div>
-        <label>Private Lender Points/Fees (ex: 0.02)</label>
-        <input id="pl_points" type="number" step="0.01" placeholder="0">
-      </div>
-      <div class="kpi">
-        Total Debt Payoff at Sale<br><strong id="debt_total">$0</strong>
-      </div>
-    </div>
-
-    <div class="scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>Debt Component</th>
-            <th>Amount</th>
-          </tr>
-        </thead>
-        <tbody id="debt_table"></tbody>
-      </table>
-    </div>
-
-    <div class="muted">Partner sees what gets paid FIRST at closing (debt payoff), before distributions.</div>
-  </div>
-
-  <!-- Sources vs Uses -->
-  <div class="card">
-    <h2>Sources vs Uses (must balance)</h2>
-
-    <div class="scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>Uses (where money goes)</th>
-            <th>Amount</th>
-          </tr>
-        </thead>
-        <tbody id="uses_table"></tbody>
-      </table>
-    </div>
-
-    <div style="height:10px;"></div>
-
-    <div class="scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>Sources (how it's funded)</th>
-            <th>Amount</th>
-          </tr>
-        </thead>
-        <tbody id="sources_table"></tbody>
-      </table>
-    </div>
-
-    <div class="row2">
-      <div class="kpi">Estimated Equity Needed<br><strong id="equity_needed">$0</strong></div>
-      <div class="kpi">Equity Used (Partner Cash)<br><strong id="equity_used">$0</strong></div>
-    </div>
-
-    <div class="muted">If you leave “Equity Partner Cash” blank, the app uses the estimated equity needed.</div>
-  </div>
-
-  <!-- Waterfall + outcome -->
-  <div class="card">
-    <h2>JV Waterfall (Partner gets paid before Operator)</h2>
-
-    <div class="row2">
-      <div class="kpi">Capital Returned First<br><strong id="wf_capital">$0</strong></div>
-      <div class="kpi">Preferred Return Earned<br><strong id="wf_pref">$0</strong></div>
-    </div>
-
-    <div class="row2">
-      <div class="kpi">Profit Available to Split<br><strong id="wf_split_pool">$0</strong></div>
-      <div class="kpi">Split Selected<br><strong id="wf_split">60 / 40</strong></div>
-    </div>
-
-    <div class="row2">
-      <div class="kpi">Partner Profit Share<br><strong id="wf_partner_share">$0</strong></div>
-      <div class="kpi">Your Pocket (Operator)<br><strong id="wf_operator_share">$0</strong></div>
-    </div>
-
-    <div class="kpi">
-      Partner Total Cash Back (capital + pref + share)<br>
-      <strong id="wf_partner_total">$0</strong>
-    </div>
-
-    <div class="row2">
-      <div class="kpi">Partner ROI (total)<br><strong id="wf_roi_total">0%</strong></div>
-      <div class="kpi">Partner ROI (annualized)<br><strong id="wf_roi_ann">0%</strong></div>
-    </div>
-
-    <div class="muted">
-      Partner must understand: (1) where money goes, (2) when it comes back, (3) how they get paid before you.
-    </div>
-  </div>
-
-  <!-- JV Pitch -->
-  <div class="card">
-    <h2>JV 1-Page Pitch (Copy / PDF)</h2>
-    <textarea id="jv_pitch" readonly></textarea>
-    <div class="row2">
-      <button class="primary" onclick="copyText('jv_pitch')">Copy Pitch</button>
-      <button class="secondary" onclick="exportJVPDF()">Export Pitch (PDF / Print)</button>
-    </div>
-    <div class="muted">
-      iPhone: Export → Share → Print → pinch-out (zoom) → Share → Save to Files (PDF).
-    </div>
-  </div>
-
-</div>
-
-<!-- PRINT AREA: JV PITCH -->
-<div id="print_jv">
-  <div class="card" style="box-shadow:none; border:1px solid #e5e7eb; border-radius:0;">
-    <h2 style="margin-bottom:8px;">JV Partnership — 1-Page Pitch</h2>
-    <pre id="print_jv_text" style="white-space:pre-wrap; font-family:inherit; margin:0;"></pre>
-  </div>
-</div>
-
-</main>
 
 <script>
-function money(x){
-  if (!Number.isFinite(x)) x = 0;
-  return x.toLocaleString("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0});
-}
-function pct(x){
-  if (!Number.isFinite(x)) x = 0;
-  return (x*100).toFixed(1) + "%";
-}
-function num(x){
-  const v = Number(x);
-  return Number.isFinite(v) ? v : 0;
+function toggleAccordion(btn) {
+  const content = btn.nextElementSibling;
+  content.classList.toggle("active");
 }
 
-function pmt(P, annualRate, nMonths) {
-  const r = annualRate / 12;
-  if (r === 0) return P / nMonths;
-  return (P * r) / (1 - Math.pow(1 + r, -nMonths));
-}
-
-function buildSchedule({ price, downPct, annualRate, termMonths, type }) {
-  const down = price * downPct;
-  const loan = Math.max(0, price - down);
-  let balance = loan;
-  const r = annualRate / 12;
-  let payment = 0;
-  if (type === "amortizing") payment = pmt(loan, annualRate, termMonths);
-
-  const rows = [];
-  rows.push({ month: 0, payment: down, interest: 0, principal: 0, balance });
-
-  for (let m = 1; m <= termMonths; m++) {
-    const interest = balance * r;
-    let principal = 0;
-    let pay = 0;
-
-    if (type === "interestOnlyBalloon") {
-      pay = interest;
-      if (m === termMonths) {
-        principal = balance;
-        pay = interest + principal;
-        balance = 0;
-      }
-    } else {
-      pay = payment;
-      principal = Math.max(0, pay - interest);
-      balance = Math.max(0, balance - principal);
-      if (m === termMonths) balance = 0;
-    }
-
-    rows.push({ month: m, payment: pay, interest, principal, balance });
-    if (balance <= 0) break;
-  }
-  return { down, loan, payment, rows };
-}
-
-function stressDefault(rows, defaultMonth, foreclosureCost = 0) {
-  const paidRows = rows.filter(r => r.month >= 0 && r.month < defaultMonth);
-  const cashReceived = paidRows.reduce((s,r)=>s+num(r.payment),0);
-  const interestReceived = paidRows.reduce((s,r)=>s+num(r.interest),0);
-  const principalReceived = paidRows.reduce((s,r)=>s+num(r.principal),0);
-  const lastPaid = paidRows[paidRows.length-1];
-  const remainingBalance = lastPaid ? num(lastPaid.balance) : num(rows[0].balance);
-  return { cashReceived, interestReceived, principalReceived, remainingBalance, netCashAfterCosts: cashReceived - foreclosureCost };
-}
-
-function splitToPercents(splitStr){
-  const parts = String(splitStr||"60/40").split("/");
-  const a = num(parts[0]); const b = num(parts[1]);
-  const sum = a + b;
-  if (sum <= 0) return {partner:0.6, operator:0.4};
-  return {partner:a/sum, operator:b/sum};
-}
-
-function showTab(which){
-  ["operator","investor","lender","jv"].forEach(k=>{
-    const el = document.getElementById("tab_"+k);
-    if (el) el.classList.toggle("active", k===which);
-    const btn = document.getElementById("btn_"+k);
-    if (btn) btn.classList.toggle("primary", k===which);
-    if (btn) btn.classList.toggle("secondary", k!==which);
-  });
-}
-
-function copyText(id){
-  const t = document.getElementById(id)?.value || "";
-  if (!t) return;
-  navigator.clipboard.writeText(t).then(()=>alert("Copied")).catch(()=>prompt("Copy:", t));
-}
-
-function exportJVPDF(){
-  const pitch = document.getElementById("jv_pitch")?.value || "";
-  document.getElementById("print_jv_text").textContent = pitch;
-  document.body.classList.add("print-jv");
-  setTimeout(()=>{
-    window.print();
-    setTimeout(()=>document.body.classList.remove("print-jv"), 500);
-  }, 50);
-}
-
-function initLenderTable(){
-  const rows = [
-    ["Loan Type","Hard money / Private lender?","",""],
-    ["Loan Amount","Max loan amount?","",""],
-    ["LTV / LTC","% financed (purchase / total)?","",""],
-    ["Interest Rate","Annual rate?","",""],
-    ["Points","Origination points?","",""],
-    ["Term","Loan duration (months)?","",""],
-    ["Extension","Available? Cost? Conditions?","",""],
-    ["Prepayment","Any prepayment penalty?","",""],
-    ["Rehab Draws","How many draws? Draw fees?","",""],
-    ["Draw Timing","Inspection + funding delay (days)?","",""],
-    ["Holdback","% retained by lender?","",""],
-    ["Fees","Any admin / doc / exit fees?","",""],
-    ["Insurance","Coverage required? Additional insured?","",""],
-    ["Taxes","Who pays taxes? Escrow?","",""],
-    ["Utilities","Who pays utilities during rehab?","",""],
-    ["Default Clause","What triggers default?","",""],
-    ["PG","Personal guarantee? Carve-outs?","",""],
-    ["Foreclosure","Timeline & costs? State process?","",""],
-    ["Exit","Sale / refi accepted? Requirements?","",""]
-  ];
-  const tbody = document.getElementById("lender_table");
-  if (!tbody) return;
-  tbody.innerHTML = rows.map(r=>`
-    <tr>
-      <td>${r[0]}</td>
-      <td>${r[1]}</td>
-      <td></td>
-      <td></td>
-    </tr>
-  `).join("");
-}
-
-function calc(){
-  // --- Flip ---
-  const purchase = num(document.getElementById("purchase").value);
-  const arv = num(document.getElementById("arv").value);
-  const monthsDeal = num(document.getElementById("months").value);
-
-  const ltv = num(document.getElementById("hm_ltv").value);
-  const rate = num(document.getElementById("hm_rate").value);
-  const points = num(document.getElementById("hm_points").value);
-
-  const rehab = num(document.getElementById("rehab").value);
-  const salePct = num(document.getElementById("sale_pct").value);
-
-  const hmLoan = purchase * ltv;
-  const hmInterest = hmLoan * rate * (monthsDeal/12);
-  const hmPointCost = hmLoan * points;
-  const saleCosts = arv * salePct;
-
-  const totalCosts = purchase + rehab + hmInterest + hmPointCost + saleCosts;
-  const profit = arv - totalCosts;
-
-  document.getElementById("hmLoan").textContent = money(hmLoan);
-  document.getElementById("totalCosts").textContent = money(totalCosts);
-  document.getElementById("profit").textContent = money(profit);
-
-  const margin = (arv>0) ? ((arv-totalCosts)/arv) : 0;
-  document.getElementById("marginPct").textContent = pct(margin);
-  document.getElementById("tightWarn").style.display = (margin < 0.25 && arv>0) ? "block" : "none";
-
-  // --- Seller Finance ---
-  const sfType = document.getElementById("sf_type").value || "interestOnlyBalloon";
-  const sfDown = num(document.getElementById("sf_down").value || 0.20);
-  const sfRate = num(document.getElementById("sf_rate").value || 0.09);
-  const sfTerm = num(document.getElementById("sf_term").value || 24);
-  const sfPriceInput = num(document.getElementById("sf_price").value);
-  const sfPrice = (sfPriceInput > 0) ? sfPriceInput : arv;
-
-  const schedule = buildSchedule({ price: sfPrice, downPct: sfDown, annualRate: sfRate, termMonths: sfTerm, type: sfType });
-  const totalSFInterest = schedule.rows.reduce((s,r)=>s+num(r.interest),0);
-  const totalSFCash = schedule.rows.reduce((s,r)=>s+num(r.payment),0);
-
-  document.getElementById("sfPriceUsed").textContent = money(sfPrice);
-  document.getElementById("sfDownCash").textContent = money(schedule.down);
-  document.getElementById("sfLoan").textContent = money(schedule.loan);
-
-  const monthlyDisplay = (sfType==="amortizing") ? schedule.payment : (schedule.loan * sfRate / 12);
-  document.getElementById("sfMonthly").textContent = money(monthlyDisplay);
-
-  document.getElementById("sfTotalInterest").textContent = money(totalSFInterest);
-  document.getElementById("sfTotalCash").textContent = money(totalSFCash);
-
-  const sfTable = document.getElementById("sf_table");
-  if (sfTable){
-    sfTable.innerHTML = schedule.rows.map(r=>`
-      <tr>
-        <td style="text-align:center;">${r.month}</td>
-        <td>${money(r.payment)}</td>
-        <td>${money(r.interest)}</td>
-        <td>${money(r.principal)}</td>
-        <td>${money(r.balance)}</td>
-      </tr>
-    `).join("");
-  }
-
-  const defMonth = num(document.getElementById("default_month").value);
-  const fcCost = num(document.getElementById("foreclosure_cost").value);
-  if (defMonth > 0){
-    const st = stressDefault(schedule.rows, defMonth, fcCost);
-    document.getElementById("st_cash").textContent = money(st.cashReceived);
-    document.getElementById("st_int").textContent = money(st.interestReceived);
-    document.getElementById("st_prin").textContent = money(st.principalReceived);
-    document.getElementById("st_balance").textContent = money(st.remainingBalance);
-    document.getElementById("st_net").textContent = money(st.netCashAfterCosts);
-  } else {
-    ["st_cash","st_int","st_prin","st_balance","st_net"].forEach(id=>document.getElementById(id).textContent = money(0));
-  }
-
-  // --- Investor Summary ---
-  document.getElementById("summary").value =
-`DEAL SUMMARY
-
-Flip:
-Purchase: ${money(purchase)}
-ARV: ${money(arv)}
-Rehab: ${money(rehab)}
-Hard Money Loan: ${money(hmLoan)}
-Hard Money Rate: ${(rate*100).toFixed(1)}%
-Points: ${(points*100).toFixed(1)}%
-Holding: ${monthsDeal} months
-Sale Costs: ${money(saleCosts)}
-Total Costs: ${money(totalCosts)}
-Net Profit: ${money(profit)}
-Margin vs ARV: ${pct(margin)} (rule >= 25%)
-
-Seller Financing (optional):
-Seller Price Used: ${money(sfPrice)}
-Down: ${money(schedule.down)} (${(sfDown*100).toFixed(1)}%)
-Note Amount: ${money(schedule.loan)}
-Rate: ${(sfRate*100).toFixed(1)}%
-Term: ${sfTerm} months
-Monthly (approx): ${money(monthlyDisplay)}
-Total Interest: ${money(totalSFInterest)}
-Total Cash Received: ${money(totalSFCash)}
-
-Decision based on WORST CASE.`;
-
-  // --- JV ---
-  const jvName = document.getElementById("jv_name").value || "";
-  const jvMarket = document.getElementById("jv_market").value || "";
-  const jvContractStatus = document.getElementById("jv_contract_status").value || "Pending";
-  const jvContractType = document.getElementById("jv_contract_type").value || "Purchase Contract";
-  const jvAssignFee = num(document.getElementById("jv_assignment_fee").value);
-
-  const jvPrefRate = num(document.getElementById("jv_pref").value || 0.10);
-  const jvSplitStr = document.getElementById("jv_split").value || "60/40";
-  const split = splitToPercents(jvSplitStr);
-
-  const jvOverrideMonths = num(document.getElementById("jv_months_override").value);
-  const holdMonths = (jvOverrideMonths > 0) ? jvOverrideMonths : monthsDeal;
-
-  // Holding costs monthly -> total
-  const taxM = num(document.getElementById("hc_tax_m").value);
-  const insM = num(document.getElementById("hc_ins_m").value);
-  const utilM = num(document.getElementById("hc_util_m").value);
-  const hoaM = num(document.getElementById("hc_hoa_m").value);
-  const lawnM = num(document.getElementById("hc_lawn_m").value);
-  const holdingMonthly = taxM + insM + utilM + hoaM + lawnM;
-  const holdingTotal = holdingMonthly * (holdMonths > 0 ? holdMonths : 0);
-
-  document.getElementById("hc_monthly").textContent = money(holdingMonthly);
-  document.getElementById("hc_total").textContent = money(holdingTotal);
-
-  // Private lender optional debt payoff
-  const plPrincipal = num(document.getElementById("pl_principal").value);
-  const plRate = num(document.getElementById("pl_rate").value);
-  const plPoints = num(document.getElementById("pl_points").value);
-
-  const plInterest = plPrincipal * plRate * (holdMonths/12);
-  const plFees = plPrincipal * plPoints;
-
-  // Total debt payoff at sale
-  const debtPayoff = hmLoan + hmInterest + hmPointCost + plPrincipal + plInterest + plFees;
-
-  // Render debt table
-  const debtRows = [
-    ["Hard Money Principal", hmLoan],
-    ["Hard Money Interest (accrued)", hmInterest],
-    ["Hard Money Points/Fees", hmPointCost],
-    ["Private Lender Principal", plPrincipal],
-    ["Private Lender Interest (accrued)", plInterest],
-    ["Private Lender Points/Fees", plFees],
-    ["TOTAL DEBT PAYOFF AT SALE", debtPayoff]
-  ];
-  const debtTbody = document.getElementById("debt_table");
-  if (debtTbody){
-    debtTbody.innerHTML = debtRows.map(r=>`
-      <tr>
-        <td>${r[0]}</td>
-        <td>${money(r[1])}</td>
-      </tr>
-    `).join("");
-  }
-  document.getElementById("debt_total").textContent = money(debtPayoff);
-
-  // Snapshot UI
-  document.getElementById("jv_purchase").textContent = money(purchase);
-  document.getElementById("jv_arv").textContent = money(arv);
-  document.getElementById("jv_hold").textContent = `${holdMonths} months`;
-  document.getElementById("jv_margin").textContent = pct(margin);
-  document.getElementById("jv_profit").textContent = money(profit);
-
-  // Uses
-  const acquisition = purchase + Math.max(0, jvAssignFee);
-  const selling = saleCosts;
-
-  const totalProjectCostReal = acquisition + rehab + holdingTotal + selling;
-
-  const usesRows = [
-    ["Acquisition (purchase + assignment)", acquisition],
-    ["Renovation (worst case)", rehab],
-    ["Holding costs (monthly × months)", holdingTotal],
-    ["Selling costs (agent + closing)", selling],
-    ["TOTAL PROJECT COST", totalProjectCostReal]
-  ];
-  const usesTbody = document.getElementById("uses_table");
-  if (usesTbody){
-    usesTbody.innerHTML = usesRows.map(r=>`
-      <tr>
-        <td>${r[0]}</td>
-        <td>${money(r[1])}</td>
-      </tr>
-    `).join("");
-  }
-
-  // Equity needed = Uses - Debt payoff (floor at 0)
-  const equityNeeded = Math.max(0, totalProjectCostReal - debtPayoff);
-  document.getElementById("equity_needed").textContent = money(equityNeeded);
-
-  // Equity used: if user input blank/0 -> use equityNeeded
-  const equityInput = num(document.getElementById("jv_equity").value);
-  const equityUsed = equityInput > 0 ? equityInput : equityNeeded;
-  document.getElementById("equity_used").textContent = money(equityUsed);
-
-  // Sources
-  const sourcesRows = [
-    ["Debt (Hard + Private) payoff-at-sale basis", debtPayoff],
-    ["Equity Partner Cash", equityUsed],
-    ["Operator Cash", 0],
-    ["TOTAL SOURCES", (debtPayoff + equityUsed)]
-  ];
-  const sourcesTbody = document.getElementById("sources_table");
-  if (sourcesTbody){
-    sourcesTbody.innerHTML = sourcesRows.map(r=>`
-      <tr>
-        <td>${r[0]}</td>
-        <td>${money(r[1])}</td>
-      </tr>
-    `).join("");
-  }
-
-  // Waterfall: capital returned + pref first, then remaining profit split
-  const capitalReturned = equityUsed;
-  const prefEarned = equityUsed * jvPrefRate * (holdMonths/12);
-
-  const profitToSplit = Math.max(0, profit - prefEarned);
-  const partnerShare = profitToSplit * split.partner;
-  const operatorShare = profitToSplit * split.operator;
-
-  const partnerTotalCash = capitalReturned + prefEarned + partnerShare;
-
-  // ROI
-  const roiTotal = (equityUsed > 0) ? ((partnerTotalCash - equityUsed) / equityUsed) : 0;
-  const roiAnnual = (equityUsed > 0 && holdMonths > 0) ? (roiTotal * (12/holdMonths)) : 0;
-
-  // Output waterfall
-  document.getElementById("wf_capital").textContent = money(capitalReturned);
-  document.getElementById("wf_pref").textContent = money(prefEarned);
-  document.getElementById("wf_split_pool").textContent = money(profitToSplit);
-  document.getElementById("wf_split").textContent = jvSplitStr;
-  document.getElementById("wf_partner_share").textContent = money(partnerShare);
-  document.getElementById("wf_operator_share").textContent = money(operatorShare);
-  document.getElementById("wf_partner_total").textContent = money(partnerTotalCash);
-  document.getElementById("wf_roi_total").textContent = pct(roiTotal);
-  document.getElementById("wf_roi_ann").textContent = pct(roiAnnual);
-
-  // JV Pitch text
-  const pitch =
-`JV PARTNERSHIP — 1-PAGE PITCH
-
-DEAL SNAPSHOT
-- Deal: ${jvName || "(name)"}
-- Market: ${jvMarket || "(city/zip)"}
-- Strategy: Fix & Flip (JV)
-- Contract Status: ${jvContractStatus}
-- Contract Type: ${jvContractType}
-- Purchase Price: ${money(purchase)}
-- ARV (Sale Price): ${money(arv)}
-- Holding Period: ${holdMonths} months
-- Margin vs ARV: ${pct(margin)} (rule >= 25%)
-
-USE OF FUNDS (WHERE THE MONEY GOES)
-- Acquisition (purchase + assignment): ${money(acquisition)}
-- Renovation (worst case): ${money(rehab)}
-- Holding costs (monthly × months): ${money(holdingTotal)}  [monthly: ${money(holdingMonthly)}]
-- Selling costs (agent + closing): ${money(selling)}
-= TOTAL PROJECT COST: ${money(totalProjectCostReal)}
-
-DEBT PAYOFF (PAID FIRST AT SALE)
-- Hard money principal: ${money(hmLoan)}
-- Hard money interest: ${money(hmInterest)}
-- Hard money points/fees: ${money(hmPointCost)}
-- Private lender principal: ${money(plPrincipal)}
-- Private lender interest: ${money(plInterest)}
-- Private lender points/fees: ${money(plFees)}
-= TOTAL DEBT PAYOFF AT SALE: ${money(debtPayoff)}
-
-SOURCES (HOW IT'S FUNDED)
-- Debt (Hard + Private): ${money(debtPayoff)}
-- Equity partner cash (used): ${money(equityUsed)}  [estimated needed: ${money(equityNeeded)}]
-- Operator cash: $0
-
-PROJECT RESULTS
-- Net Profit (before JV split): ${money(profit)}
-
-JV WATERFALL (PARTNER GETS PAID BEFORE OPERATOR)
-Step 1) Capital returned first: ${money(capitalReturned)}
-Step 2) Preferred return (${(jvPrefRate*100).toFixed(1)}% annual): ${money(prefEarned)}
-Step 3) Remaining profit split (${jvSplitStr} Partner/Operator):
-- Profit to split: ${money(profitToSplit)}
-- Partner share: ${money(partnerShare)}
-- Operator share (my pocket): ${money(operatorShare)}
-
-PARTNER OUTCOME (BOTTOM LINE)
-- Capital invested: ${money(equityUsed)}
-- Total cash back: ${money(partnerTotalCash)}
-- Net profit: ${money(partnerTotalCash - equityUsed)}
-- ROI (total): ${(roiTotal*100).toFixed(1)}%
-- ROI annualized (approx): ${(roiAnnual*100).toFixed(1)}%
-
-WHY THIS IS SAFE
-- Margin rule >= 25% ARV
-- Debt is paid first at closing
-- Capital returned first
-- Preferred return paid before operator gets paid
-- Line-item rehab + holding costs included (worst case)`;
-
-  document.getElementById("jv_pitch").value = pitch;
-}
-
-document.querySelectorAll("input,select").forEach(el=>{
-  el.addEventListener("input", calc);
-  el.addEventListener("change", calc);
-});
-
-initLenderTable();
-calc();
-</script>
-
-<script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(()=>{});
+function updateOutputProfile() {
+  const profile = document.getElementById("outputProfile").value;
+  document.querySelectorAll(".jv-only").forEach(el => {
+    el.style.display = (profile === "jv") ? "block" : "none";
   });
 }
 </script>
-
-</body>
-</html>
