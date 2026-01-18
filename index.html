@@ -49,15 +49,14 @@
   .scroll{ overflow:auto; }
   table{ border-collapse:collapse; width:100%; font-size:13px; }
   th, td{ border:1px solid #ddd; padding:8px; text-align:right; }
-  th:first-child, td:first-child{ text-align:center; }
+  th:first-child, td:first-child{ text-align:left; }
   .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   @media (max-width:720px){ .row2{ grid-template-columns:1fr; } }
 
-  /* Print: show only JV Pitch */
+  /* Print: show only JV pitch block */
   @media print{
     header, .btnrow, .tab{ display:none !important; }
     body.print-jv #print_jv { display:block !important; }
-    body.print-jv #print_jv * { visibility:visible; }
     body.print-jv main { padding:0; }
   }
   #print_jv{ display:none; }
@@ -175,7 +174,7 @@
       <table>
         <thead>
           <tr>
-            <th>Month</th>
+            <th style="text-align:center;">Month</th>
             <th>Payment</th>
             <th>Interest</th>
             <th>Principal</th>
@@ -219,7 +218,7 @@
 <div id="tab_lender" class="tab">
   <div class="card">
     <h2>Lender Checklist (Fill this before you sign)</h2>
-    <div class="muted">Use this table to compare lenders objectively (hard money and private lenders).</div>
+    <div class="muted">Use this to compare lenders objectively (hard money and private lenders).</div>
     <div class="scroll">
       <table>
         <thead>
@@ -239,6 +238,7 @@
 
 <!-- JV PARTNER TAB -->
 <div id="tab_jv" class="tab">
+
   <div class="card">
     <h2>JV Partner — Settings</h2>
 
@@ -253,18 +253,23 @@
       </div>
     </div>
 
-    <label>Contract Status</label>
-    <select id="jv_contract_status">
-      <option value="Signed">Contract Signed</option>
-      <option value="Pending">Pending</option>
-      <option value="Not Signed">Not Signed</option>
-    </select>
-
-    <label>Contract Type</label>
-    <select id="jv_contract_type">
-      <option value="Purchase Contract">Purchase Contract</option>
-      <option value="Assignment">Assignment</option>
-    </select>
+    <div class="row2">
+      <div>
+        <label>Contract Status</label>
+        <select id="jv_contract_status">
+          <option value="Signed">Contract Signed</option>
+          <option value="Pending">Pending</option>
+          <option value="Not Signed">Not Signed</option>
+        </select>
+      </div>
+      <div>
+        <label>Contract Type</label>
+        <select id="jv_contract_type">
+          <option value="Purchase Contract">Purchase Contract</option>
+          <option value="Assignment">Assignment</option>
+        </select>
+      </div>
+    </div>
 
     <div class="row2">
       <div>
@@ -272,9 +277,9 @@
         <input id="jv_assignment_fee" type="number" placeholder="0">
       </div>
       <div>
-        <label>Equity Partner Cash Invested</label>
-        <input id="jv_equity" type="number" placeholder="(example: 120000)">
-        <div class="muted">This is the partner’s cash. If you don’t know yet, leave it blank.</div>
+        <label>Holding Period Override (months)</label>
+        <input id="jv_months_override" type="number" placeholder="(empty = use Deal months)">
+        <div class="muted">If empty, the JV uses the Deal holding period.</div>
       </div>
     </div>
 
@@ -287,31 +292,24 @@
         <label>Profit Split (Partner / Operator)</label>
         <select id="jv_split">
           <option value="50/50">50 / 50</option>
-          <option value="60/40">60 / 40</option>
+          <option value="60/40" selected>60 / 40</option>
           <option value="70/30">70 / 30</option>
           <option value="40/60">40 / 60</option>
         </select>
-        <div class="muted">This split applies AFTER capital + preferred return.</div>
+        <div class="muted">Split applies AFTER capital + preferred return.</div>
       </div>
     </div>
 
-    <div class="row2">
-      <div>
-        <label>Override Holding Period for JV (months)</label>
-        <input id="jv_months_override" type="number" placeholder="(empty = use Deal months)">
-        <div class="muted">If empty, the JV uses the Deal holding period.</div>
-      </div>
-      <div>
-        <label>Notes</label>
-        <input id="jv_notes" placeholder="Backup exit: refinance • fixed-price GC">
-      </div>
-    </div>
+    <label>Equity Partner Cash Invested (optional)</label>
+    <input id="jv_equity" type="number" placeholder="(leave empty = auto equity needed)">
+    <div class="muted">If blank, the app estimates equity needed from Sources vs Uses.</div>
+
+    <label>Notes</label>
+    <input id="jv_notes" placeholder="Backup exit: refinance • fixed-price GC">
   </div>
 
   <div class="card">
     <h2>JV Partner — Deal Snapshot (auto)</h2>
-
-    <div class="kpi">Strategy<br><strong>Fix & Flip (JV)</strong></div>
 
     <div class="row2">
       <div class="kpi">Purchase Price<br><strong id="jv_purchase">$0</strong></div>
@@ -324,54 +322,165 @@
     </div>
 
     <div class="kpi">Net Profit (before JV split)<br><strong id="jv_profit">$0</strong></div>
-    <div class="muted">Profit here is based on your Flip module (ARV − total costs).</div>
+    <div class="muted">Based on your Flip module (ARV − total costs).</div>
   </div>
 
+  <!-- Holding Costs table -->
   <div class="card">
-    <h2>Use of Funds (where the money goes)</h2>
+    <h2>Holding Costs (Monthly → Total)</h2>
+
+    <div class="row2">
+      <div>
+        <label>Property Taxes (monthly)</label>
+        <input id="hc_tax_m" type="number" placeholder="450">
+      </div>
+      <div>
+        <label>Insurance (monthly)</label>
+        <input id="hc_ins_m" type="number" placeholder="180">
+      </div>
+    </div>
+
+    <div class="row2">
+      <div>
+        <label>Utilities (monthly)</label>
+        <input id="hc_util_m" type="number" placeholder="250">
+      </div>
+      <div>
+        <label>HOA (monthly, optional)</label>
+        <input id="hc_hoa_m" type="number" placeholder="0">
+      </div>
+    </div>
+
+    <div class="row2">
+      <div>
+        <label>Lawn/Snow (monthly, optional)</label>
+        <input id="hc_lawn_m" type="number" placeholder="0">
+      </div>
+      <div class="kpi">
+        Total Monthly Holding<br><strong id="hc_monthly">$0</strong>
+      </div>
+    </div>
+
+    <div class="kpi">
+      Total Holding Costs (Monthly × Holding Months)<br><strong id="hc_total">$0</strong>
+    </div>
+
+    <div class="muted">This makes your JV pitch “real-world” (no hidden holding costs).</div>
+  </div>
+
+  <!-- Debt Payoff table -->
+  <div class="card">
+    <h2>Debt Payoff at Sale (paid first)</h2>
+
+    <div class="row2">
+      <div>
+        <label>Private Lender Principal (optional)</label>
+        <input id="pl_principal" type="number" placeholder="0">
+      </div>
+      <div>
+        <label>Private Lender Annual Rate (ex: 0.12)</label>
+        <input id="pl_rate" type="number" step="0.01" placeholder="0">
+      </div>
+    </div>
+
+    <div class="row2">
+      <div>
+        <label>Private Lender Points/Fees (ex: 0.02)</label>
+        <input id="pl_points" type="number" step="0.01" placeholder="0">
+      </div>
+      <div class="kpi">
+        Total Debt Payoff at Sale<br><strong id="debt_total">$0</strong>
+      </div>
+    </div>
+
     <div class="scroll">
       <table>
         <thead>
           <tr>
-            <th>Use</th>
+            <th>Debt Component</th>
             <th>Amount</th>
           </tr>
         </thead>
-        <tbody id="jv_use_table"></tbody>
+        <tbody id="debt_table"></tbody>
       </table>
     </div>
-    <div class="muted">Partner cares about clarity: every dollar has a bucket.</div>
+
+    <div class="muted">Partner sees what gets paid FIRST at closing (debt payoff), before distributions.</div>
   </div>
 
+  <!-- Sources vs Uses -->
   <div class="card">
-    <h2>JV Waterfall (paid before operator)</h2>
+    <h2>Sources vs Uses (must balance)</h2>
 
-    <div class="row2">
-      <div class="kpi">Capital Returned First<br><strong id="jv_cap_return">$0</strong></div>
-      <div class="kpi">Preferred Return (earned)<br><strong id="jv_pref_amt">$0</strong></div>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Uses (where money goes)</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody id="uses_table"></tbody>
+      </table>
+    </div>
+
+    <div style="height:10px;"></div>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Sources (how it's funded)</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody id="sources_table"></tbody>
+      </table>
     </div>
 
     <div class="row2">
-      <div class="kpi">Profit Available to Split<br><strong id="jv_profit_split">$0</strong></div>
-      <div class="kpi">Split Selected<br><strong id="jv_split_show">50 / 50</strong></div>
+      <div class="kpi">Estimated Equity Needed<br><strong id="equity_needed">$0</strong></div>
+      <div class="kpi">Equity Used (Partner Cash)<br><strong id="equity_used">$0</strong></div>
+    </div>
+
+    <div class="muted">If you leave “Equity Partner Cash” blank, the app uses the estimated equity needed.</div>
+  </div>
+
+  <!-- Waterfall + outcome -->
+  <div class="card">
+    <h2>JV Waterfall (Partner gets paid before Operator)</h2>
+
+    <div class="row2">
+      <div class="kpi">Capital Returned First<br><strong id="wf_capital">$0</strong></div>
+      <div class="kpi">Preferred Return Earned<br><strong id="wf_pref">$0</strong></div>
     </div>
 
     <div class="row2">
-      <div class="kpi">Partner Profit Share<br><strong id="jv_partner_share">$0</strong></div>
-      <div class="kpi">Your Pocket (Operator)<br><strong id="jv_operator_share">$0</strong></div>
+      <div class="kpi">Profit Available to Split<br><strong id="wf_split_pool">$0</strong></div>
+      <div class="kpi">Split Selected<br><strong id="wf_split">60 / 40</strong></div>
+    </div>
+
+    <div class="row2">
+      <div class="kpi">Partner Profit Share<br><strong id="wf_partner_share">$0</strong></div>
+      <div class="kpi">Your Pocket (Operator)<br><strong id="wf_operator_share">$0</strong></div>
     </div>
 
     <div class="kpi">
       Partner Total Cash Back (capital + pref + share)<br>
-      <strong id="jv_partner_total">$0</strong>
+      <strong id="wf_partner_total">$0</strong>
+    </div>
+
+    <div class="row2">
+      <div class="kpi">Partner ROI (total)<br><strong id="wf_roi_total">0%</strong></div>
+      <div class="kpi">Partner ROI (annualized)<br><strong id="wf_roi_ann">0%</strong></div>
     </div>
 
     <div class="muted">
-      Partner must understand:
-      (1) where their money goes, (2) when they get it back, (3) how they get paid before you.
+      Partner must understand: (1) where money goes, (2) when it comes back, (3) how they get paid before you.
     </div>
   </div>
 
+  <!-- JV Pitch -->
   <div class="card">
     <h2>JV 1-Page Pitch (Copy / PDF)</h2>
     <textarea id="jv_pitch" readonly></textarea>
@@ -380,7 +489,7 @@
       <button class="secondary" onclick="exportJVPDF()">Export Pitch (PDF / Print)</button>
     </div>
     <div class="muted">
-      iPhone: tap Export → Share → Print → pinch-out → Save as PDF.
+      iPhone: Export → Share → Print → pinch-out (zoom) → Share → Save to Files (PDF).
     </div>
   </div>
 
@@ -449,7 +558,6 @@ function buildSchedule({ price, downPct, annualRate, termMonths, type }) {
     rows.push({ month: m, payment: pay, interest, principal, balance });
     if (balance <= 0) break;
   }
-
   return { down, loan, payment, rows };
 }
 
@@ -460,20 +568,14 @@ function stressDefault(rows, defaultMonth, foreclosureCost = 0) {
   const principalReceived = paidRows.reduce((s,r)=>s+num(r.principal),0);
   const lastPaid = paidRows[paidRows.length-1];
   const remainingBalance = lastPaid ? num(lastPaid.balance) : num(rows[0].balance);
-
-  return {
-    cashReceived, interestReceived, principalReceived,
-    remainingBalance,
-    netCashAfterCosts: cashReceived - foreclosureCost
-  };
+  return { cashReceived, interestReceived, principalReceived, remainingBalance, netCashAfterCosts: cashReceived - foreclosureCost };
 }
 
 function splitToPercents(splitStr){
-  // "60/40" => {partner:0.60, operator:0.40}
-  const parts = String(splitStr||"50/50").split("/");
+  const parts = String(splitStr||"60/40").split("/");
   const a = num(parts[0]); const b = num(parts[1]);
   const sum = a + b;
-  if (sum <= 0) return {partner:0.5, operator:0.5};
+  if (sum <= 0) return {partner:0.6, operator:0.4};
   return {partner:a/sum, operator:b/sum};
 }
 
@@ -494,13 +596,11 @@ function copyText(id){
 }
 
 function exportJVPDF(){
-  // Uses browser print dialog (Save as PDF on iOS via Print flow)
   const pitch = document.getElementById("jv_pitch")?.value || "";
   document.getElementById("print_jv_text").textContent = pitch;
   document.body.classList.add("print-jv");
   setTimeout(()=>{
     window.print();
-    // remove class after print dialog opens
     setTimeout(()=>document.body.classList.remove("print-jv"), 500);
   }, 50);
 }
@@ -531,19 +631,19 @@ function initLenderTable(){
   if (!tbody) return;
   tbody.innerHTML = rows.map(r=>`
     <tr>
-      <td style="text-align:left;">${r[0]}</td>
-      <td style="text-align:left;">${r[1]}</td>
-      <td style="text-align:left;"></td>
-      <td style="text-align:left;"></td>
+      <td>${r[0]}</td>
+      <td>${r[1]}</td>
+      <td></td>
+      <td></td>
     </tr>
   `).join("");
 }
 
 function calc(){
-  // --- Flip inputs ---
+  // --- Flip ---
   const purchase = num(document.getElementById("purchase").value);
   const arv = num(document.getElementById("arv").value);
-  const months = num(document.getElementById("months").value);
+  const monthsDeal = num(document.getElementById("months").value);
 
   const ltv = num(document.getElementById("hm_ltv").value);
   const rate = num(document.getElementById("hm_rate").value);
@@ -553,7 +653,7 @@ function calc(){
   const salePct = num(document.getElementById("sale_pct").value);
 
   const hmLoan = purchase * ltv;
-  const hmInterest = hmLoan * rate * (months/12);
+  const hmInterest = hmLoan * rate * (monthsDeal/12);
   const hmPointCost = hmLoan * points;
   const saleCosts = arv * salePct;
 
@@ -568,7 +668,7 @@ function calc(){
   document.getElementById("marginPct").textContent = pct(margin);
   document.getElementById("tightWarn").style.display = (margin < 0.25 && arv>0) ? "block" : "none";
 
-  // --- Seller finance inputs ---
+  // --- Seller Finance ---
   const sfType = document.getElementById("sf_type").value || "interestOnlyBalloon";
   const sfDown = num(document.getElementById("sf_down").value || 0.20);
   const sfRate = num(document.getElementById("sf_rate").value || 0.09);
@@ -594,7 +694,7 @@ function calc(){
   if (sfTable){
     sfTable.innerHTML = schedule.rows.map(r=>`
       <tr>
-        <td>${r.month}</td>
+        <td style="text-align:center;">${r.month}</td>
         <td>${money(r.payment)}</td>
         <td>${money(r.interest)}</td>
         <td>${money(r.principal)}</td>
@@ -616,7 +716,7 @@ function calc(){
     ["st_cash","st_int","st_prin","st_balance","st_net"].forEach(id=>document.getElementById(id).textContent = money(0));
   }
 
-  // --- Investor summary ---
+  // --- Investor Summary ---
   document.getElementById("summary").value =
 `DEAL SUMMARY
 
@@ -627,7 +727,7 @@ Rehab: ${money(rehab)}
 Hard Money Loan: ${money(hmLoan)}
 Hard Money Rate: ${(rate*100).toFixed(1)}%
 Points: ${(points*100).toFixed(1)}%
-Holding: ${months} months
+Holding: ${monthsDeal} months
 Sale Costs: ${money(saleCosts)}
 Total Costs: ${money(totalCosts)}
 Net Profit: ${money(profit)}
@@ -645,72 +745,146 @@ Total Cash Received: ${money(totalSFCash)}
 
 Decision based on WORST CASE.`;
 
-  // --- JV Partner calculations ---
+  // --- JV ---
   const jvName = document.getElementById("jv_name").value || "";
   const jvMarket = document.getElementById("jv_market").value || "";
   const jvContractStatus = document.getElementById("jv_contract_status").value || "Pending";
   const jvContractType = document.getElementById("jv_contract_type").value || "Purchase Contract";
   const jvAssignFee = num(document.getElementById("jv_assignment_fee").value);
-  const jvEquity = num(document.getElementById("jv_equity").value);
+
   const jvPrefRate = num(document.getElementById("jv_pref").value || 0.10);
-  const jvSplitStr = document.getElementById("jv_split").value || "50/50";
-  const jvOverrideMonths = num(document.getElementById("jv_months_override").value);
-  const jvHoldMonths = (jvOverrideMonths > 0) ? jvOverrideMonths : months;
-
+  const jvSplitStr = document.getElementById("jv_split").value || "60/40";
   const split = splitToPercents(jvSplitStr);
-  document.getElementById("jv_split_show").textContent = jvSplitStr;
 
+  const jvOverrideMonths = num(document.getElementById("jv_months_override").value);
+  const holdMonths = (jvOverrideMonths > 0) ? jvOverrideMonths : monthsDeal;
+
+  // Holding costs monthly -> total
+  const taxM = num(document.getElementById("hc_tax_m").value);
+  const insM = num(document.getElementById("hc_ins_m").value);
+  const utilM = num(document.getElementById("hc_util_m").value);
+  const hoaM = num(document.getElementById("hc_hoa_m").value);
+  const lawnM = num(document.getElementById("hc_lawn_m").value);
+  const holdingMonthly = taxM + insM + utilM + hoaM + lawnM;
+  const holdingTotal = holdingMonthly * (holdMonths > 0 ? holdMonths : 0);
+
+  document.getElementById("hc_monthly").textContent = money(holdingMonthly);
+  document.getElementById("hc_total").textContent = money(holdingTotal);
+
+  // Private lender optional debt payoff
+  const plPrincipal = num(document.getElementById("pl_principal").value);
+  const plRate = num(document.getElementById("pl_rate").value);
+  const plPoints = num(document.getElementById("pl_points").value);
+
+  const plInterest = plPrincipal * plRate * (holdMonths/12);
+  const plFees = plPrincipal * plPoints;
+
+  // Total debt payoff at sale
+  const debtPayoff = hmLoan + hmInterest + hmPointCost + plPrincipal + plInterest + plFees;
+
+  // Render debt table
+  const debtRows = [
+    ["Hard Money Principal", hmLoan],
+    ["Hard Money Interest (accrued)", hmInterest],
+    ["Hard Money Points/Fees", hmPointCost],
+    ["Private Lender Principal", plPrincipal],
+    ["Private Lender Interest (accrued)", plInterest],
+    ["Private Lender Points/Fees", plFees],
+    ["TOTAL DEBT PAYOFF AT SALE", debtPayoff]
+  ];
+  const debtTbody = document.getElementById("debt_table");
+  if (debtTbody){
+    debtTbody.innerHTML = debtRows.map(r=>`
+      <tr>
+        <td>${r[0]}</td>
+        <td>${money(r[1])}</td>
+      </tr>
+    `).join("");
+  }
+  document.getElementById("debt_total").textContent = money(debtPayoff);
+
+  // Snapshot UI
   document.getElementById("jv_purchase").textContent = money(purchase);
   document.getElementById("jv_arv").textContent = money(arv);
-  document.getElementById("jv_hold").textContent = `${jvHoldMonths} months`;
+  document.getElementById("jv_hold").textContent = `${holdMonths} months`;
   document.getElementById("jv_margin").textContent = pct(margin);
   document.getElementById("jv_profit").textContent = money(profit);
 
-  // Use of funds table (simple, based on your flip model + assignment fee as extra acquisition cost if any)
+  // Uses
   const acquisition = purchase + Math.max(0, jvAssignFee);
-  const financingCosts = hmInterest + hmPointCost;
-  const holdingCosts = 0; // optional (keep blank for now). You can later add taxes/insurance/utilities fields.
   const selling = saleCosts;
-  const useRows = [
+
+  const totalProjectCostReal = acquisition + rehab + holdingTotal + selling;
+
+  const usesRows = [
     ["Acquisition (purchase + assignment)", acquisition],
     ["Renovation (worst case)", rehab],
-    ["Financing costs (interest + points)", financingCosts],
-    ["Holding costs (tax/ins/utilities)", holdingCosts],
+    ["Holding costs (monthly × months)", holdingTotal],
     ["Selling costs (agent + closing)", selling],
-    ["TOTAL PROJECT COST", (acquisition + rehab + financingCosts + holdingCosts + selling)]
+    ["TOTAL PROJECT COST", totalProjectCostReal]
   ];
-  const jvUseTbody = document.getElementById("jv_use_table");
-  if (jvUseTbody){
-    jvUseTbody.innerHTML = useRows.map(r=>`
+  const usesTbody = document.getElementById("uses_table");
+  if (usesTbody){
+    usesTbody.innerHTML = usesRows.map(r=>`
       <tr>
-        <td style="text-align:left;">${r[0]}</td>
+        <td>${r[0]}</td>
         <td>${money(r[1])}</td>
       </tr>
     `).join("");
   }
 
-  // Waterfall math (simple, conservative)
-  // If equity is blank, we still compute pref and split based on profit only (capital fields will show $0).
-  const capitalReturned = jvEquity;
-  const prefEarned = jvEquity * jvPrefRate * (jvHoldMonths/12);
+  // Equity needed = Uses - Debt payoff (floor at 0)
+  const equityNeeded = Math.max(0, totalProjectCostReal - debtPayoff);
+  document.getElementById("equity_needed").textContent = money(equityNeeded);
 
-  const profitToSplit = Math.max(0, profit - prefEarned); // operator gets nothing until pref is satisfied
+  // Equity used: if user input blank/0 -> use equityNeeded
+  const equityInput = num(document.getElementById("jv_equity").value);
+  const equityUsed = equityInput > 0 ? equityInput : equityNeeded;
+  document.getElementById("equity_used").textContent = money(equityUsed);
+
+  // Sources
+  const sourcesRows = [
+    ["Debt (Hard + Private) payoff-at-sale basis", debtPayoff],
+    ["Equity Partner Cash", equityUsed],
+    ["Operator Cash", 0],
+    ["TOTAL SOURCES", (debtPayoff + equityUsed)]
+  ];
+  const sourcesTbody = document.getElementById("sources_table");
+  if (sourcesTbody){
+    sourcesTbody.innerHTML = sourcesRows.map(r=>`
+      <tr>
+        <td>${r[0]}</td>
+        <td>${money(r[1])}</td>
+      </tr>
+    `).join("");
+  }
+
+  // Waterfall: capital returned + pref first, then remaining profit split
+  const capitalReturned = equityUsed;
+  const prefEarned = equityUsed * jvPrefRate * (holdMonths/12);
+
+  const profitToSplit = Math.max(0, profit - prefEarned);
   const partnerShare = profitToSplit * split.partner;
   const operatorShare = profitToSplit * split.operator;
 
   const partnerTotalCash = capitalReturned + prefEarned + partnerShare;
 
-  document.getElementById("jv_cap_return").textContent = money(capitalReturned);
-  document.getElementById("jv_pref_amt").textContent = money(prefEarned);
-  document.getElementById("jv_profit_split").textContent = money(profitToSplit);
-  document.getElementById("jv_partner_share").textContent = money(partnerShare);
-  document.getElementById("jv_operator_share").textContent = money(operatorShare);
-  document.getElementById("jv_partner_total").textContent = money(partnerTotalCash);
+  // ROI
+  const roiTotal = (equityUsed > 0) ? ((partnerTotalCash - equityUsed) / equityUsed) : 0;
+  const roiAnnual = (equityUsed > 0 && holdMonths > 0) ? (roiTotal * (12/holdMonths)) : 0;
 
-  const roiTotal = (jvEquity > 0) ? ((partnerTotalCash - jvEquity) / jvEquity) : 0;
-  const roiAnnual = (jvEquity > 0 && jvHoldMonths > 0) ? (roiTotal * (12/jvHoldMonths)) : 0;
+  // Output waterfall
+  document.getElementById("wf_capital").textContent = money(capitalReturned);
+  document.getElementById("wf_pref").textContent = money(prefEarned);
+  document.getElementById("wf_split_pool").textContent = money(profitToSplit);
+  document.getElementById("wf_split").textContent = jvSplitStr;
+  document.getElementById("wf_partner_share").textContent = money(partnerShare);
+  document.getElementById("wf_operator_share").textContent = money(operatorShare);
+  document.getElementById("wf_partner_total").textContent = money(partnerTotalCash);
+  document.getElementById("wf_roi_total").textContent = pct(roiTotal);
+  document.getElementById("wf_roi_ann").textContent = pct(roiAnnual);
 
-  // Build JV 1-page pitch text
+  // JV Pitch text
   const pitch =
 `JV PARTNERSHIP — 1-PAGE PITCH
 
@@ -722,23 +896,34 @@ DEAL SNAPSHOT
 - Contract Type: ${jvContractType}
 - Purchase Price: ${money(purchase)}
 - ARV (Sale Price): ${money(arv)}
-- Holding Period: ${jvHoldMonths} months
+- Holding Period: ${holdMonths} months
 - Margin vs ARV: ${pct(margin)} (rule >= 25%)
 
 USE OF FUNDS (WHERE THE MONEY GOES)
 - Acquisition (purchase + assignment): ${money(acquisition)}
 - Renovation (worst case): ${money(rehab)}
-- Financing costs (interest + points): ${money(financingCosts)}
-- Holding costs (tax/ins/utilities): ${money(holdingCosts)}
+- Holding costs (monthly × months): ${money(holdingTotal)}  [monthly: ${money(holdingMonthly)}]
 - Selling costs (agent + closing): ${money(selling)}
-= TOTAL PROJECT COST: ${money(acquisition + rehab + financingCosts + holdingCosts + selling)}
+= TOTAL PROJECT COST: ${money(totalProjectCostReal)}
+
+DEBT PAYOFF (PAID FIRST AT SALE)
+- Hard money principal: ${money(hmLoan)}
+- Hard money interest: ${money(hmInterest)}
+- Hard money points/fees: ${money(hmPointCost)}
+- Private lender principal: ${money(plPrincipal)}
+- Private lender interest: ${money(plInterest)}
+- Private lender points/fees: ${money(plFees)}
+= TOTAL DEBT PAYOFF AT SALE: ${money(debtPayoff)}
+
+SOURCES (HOW IT'S FUNDED)
+- Debt (Hard + Private): ${money(debtPayoff)}
+- Equity partner cash (used): ${money(equityUsed)}  [estimated needed: ${money(equityNeeded)}]
+- Operator cash: $0
 
 PROJECT RESULTS
-- Expected Sale Price: ${money(arv)}
-- Total Project Cost: ${money(acquisition + rehab + financingCosts + holdingCosts + selling)}
 - Net Profit (before JV split): ${money(profit)}
 
-JV WATERFALL (YOU GET PAID BEFORE OPERATOR)
+JV WATERFALL (PARTNER GETS PAID BEFORE OPERATOR)
 Step 1) Capital returned first: ${money(capitalReturned)}
 Step 2) Preferred return (${(jvPrefRate*100).toFixed(1)}% annual): ${money(prefEarned)}
 Step 3) Remaining profit split (${jvSplitStr} Partner/Operator):
@@ -747,17 +932,18 @@ Step 3) Remaining profit split (${jvSplitStr} Partner/Operator):
 - Operator share (my pocket): ${money(operatorShare)}
 
 PARTNER OUTCOME (BOTTOM LINE)
-- Capital Invested: ${money(jvEquity)}
-- Total Cash Back: ${money(partnerTotalCash)}
-- Net Profit to Partner: ${money(partnerTotalCash - jvEquity)}
+- Capital invested: ${money(equityUsed)}
+- Total cash back: ${money(partnerTotalCash)}
+- Net profit: ${money(partnerTotalCash - equityUsed)}
 - ROI (total): ${(roiTotal*100).toFixed(1)}%
 - ROI annualized (approx): ${(roiAnnual*100).toFixed(1)}%
 
 WHY THIS IS SAFE
 - Margin rule >= 25% ARV
+- Debt is paid first at closing
 - Capital returned first
 - Preferred return paid before operator gets paid
-- Line-item rehab budget (worst case)`;
+- Line-item rehab + holding costs included (worst case)`;
 
   document.getElementById("jv_pitch").value = pitch;
 }
@@ -778,5 +964,6 @@ if ("serviceWorker" in navigator) {
   });
 }
 </script>
+
 </body>
 </html>
