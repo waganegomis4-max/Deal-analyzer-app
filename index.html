@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
@@ -22,20 +22,11 @@
     background:#111;
     color:#fff;
   }
-  header h1 {
-    font-size: 18px;
-    margin: 0 0 6px 0;
-  }
-  header p {
-    margin: 0;
-    font-size: 13px;
-    opacity:.8;
-  }
-  main {
-    padding: 14px;
-    max-width: 900px;
-    margin: auto;
-  }
+  header h1 { font-size: 18px; margin: 0 0 6px 0; }
+  header p { margin: 0; font-size: 13px; opacity:.8; }
+
+  main { padding: 14px; max-width: 980px; margin: auto; }
+
   .card {
     background:#fff;
     border-radius:12px;
@@ -43,40 +34,30 @@
     margin-bottom:12px;
     box-shadow:0 1px 3px rgba(0,0,0,.06);
   }
-  h2 {
-    font-size:15px;
-    margin-top:0;
-  }
-  label {
-    font-size:12px;
-    display:block;
-    margin-bottom:4px;
-  }
-  input, select {
+  h2 { font-size:15px; margin-top:0; }
+
+  label { font-size:12px; display:block; margin-bottom:4px; }
+
+  input, select, textarea {
     width:100%;
     padding:12px;
     border-radius:10px;
     border:1px solid #ccc;
     margin-bottom:10px;
     font-size:14px;
+    box-sizing:border-box;
   }
+
   .kpi {
     background:#f2f4f7;
     padding:12px;
     border-radius:12px;
     margin-bottom:8px;
   }
-  .kpi strong {
-    font-size:18px;
-  }
-  textarea {
-    width:100%;
-    min-height:180px;
-    padding:12px;
-    border-radius:10px;
-    border:1px solid #ccc;
-    font-size:13px;
-  }
+  .kpi strong { font-size:18px; }
+
+  textarea { min-height:180px; font-size:13px; }
+
   button {
     padding:12px 14px;
     border-radius:10px;
@@ -85,10 +66,21 @@
     font-weight:600;
     margin-top:8px;
   }
-  .primary {
-    background:#111;
-    color:#fff;
-  }
+  .primary { background:#111; color:#fff; }
+  .secondary { background:#e9edf2; color:#111; }
+
+  .btnrow { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+  .tab { display:none; }
+  .tab.active { display:block; }
+
+  .muted { font-size:12px; opacity:.75; margin-top:-6px; margin-bottom:10px; }
+
+  table { border-collapse:collapse; width:100%; font-size:13px; }
+  th, td { border:1px solid #ddd; padding:8px; text-align:right; }
+  th:first-child, td:first-child { text-align:center; }
+  .scroll { overflow:auto; }
+
+  .warn { background:#fff2f2; border:1px solid #ffd1d1; padding:10px; border-radius:10px; }
 </style>
 </head>
 
@@ -100,84 +92,256 @@
 
 <main>
 
-<div class="card">
-<h2>1) Deal</h2>
-<label>Prix d'achat</label>
-<input id="purchase" type="number" placeholder="175000">
-
-<label>ARV (prix de revente)</label>
-<input id="arv" type="number" placeholder="319000">
-
-<label>Durée du projet (mois)</label>
-<input id="months" type="number" placeholder="5">
+<div class="btnrow">
+  <button class="secondary" id="btn_operator" onclick="showTab('operator')">Operator</button>
+  <button class="secondary" id="btn_investor" onclick="showTab('investor')">Investor</button>
+  <button class="secondary" id="btn_lender" onclick="showTab('lender')">Lender</button>
 </div>
 
-<div class="card">
-<h2>2) Hard Money</h2>
-<label>LTV</label>
-<input id="hm_ltv" type="number" step="0.01" placeholder="0.70">
+<!-- OPERATOR TAB -->
+<div id="tab_operator" class="tab active">
 
-<label>Taux annuel</label>
-<input id="hm_rate" type="number" step="0.01" placeholder="0.10">
+  <div class="card">
+    <h2>1) Deal</h2>
+    <label>Purchase Price</label>
+    <input id="purchase" type="number" placeholder="175000">
 
-<label>Points</label>
-<input id="hm_points" type="number" step="0.01" placeholder="0.03">
+    <label>ARV (After Repair Value)</label>
+    <input id="arv" type="number" placeholder="319000">
+
+    <label>Project Duration (months)</label>
+    <input id="months" type="number" placeholder="5">
+  </div>
+
+  <div class="card">
+    <h2>2) Hard Money</h2>
+    <label>LTV</label>
+    <input id="hm_ltv" type="number" step="0.01" placeholder="0.70">
+
+    <label>Annual Interest Rate</label>
+    <input id="hm_rate" type="number" step="0.01" placeholder="0.10">
+
+    <label>Points</label>
+    <input id="hm_points" type="number" step="0.01" placeholder="0.03">
+  </div>
+
+  <div class="card">
+    <h2>3) Rehab</h2>
+    <label>Rehab Budget (worst case)</label>
+    <input id="rehab" type="number" placeholder="55000">
+  </div>
+
+  <div class="card">
+    <h2>4) Sale</h2>
+    <label>Agent Commission + Closing Costs (%)</label>
+    <input id="sale_pct" type="number" step="0.01" placeholder="0.07">
+  </div>
+
+  <div class="card">
+    <h2>Flip Results</h2>
+
+    <div class="kpi">Hard Money Loan<br><strong id="hmLoan">$0</strong></div>
+    <div class="kpi">Total Costs<br><strong id="totalCosts">$0</strong></div>
+    <div class="kpi">Net Profit<br><strong id="profit">$0</strong></div>
+
+    <div class="kpi">
+      Margin Rule (>= 25% ARV) — (ARV − Total Costs) / ARV<br>
+      <strong id="marginPct">0%</strong>
+    </div>
+
+    <div id="tightWarn" class="warn" style="display:none;">
+      ⚠️ Deal is too tight based on your rule (margin &lt; 25% of ARV).  
+      Seller financing does NOT fix a bad deal.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Seller Financing — Inputs</h2>
+
+    <label>Seller Price (Seller Financing Sale Price)</label>
+    <input id="sf_price" type="number" placeholder="(leave empty = ARV)">
+    <div class="muted">If empty, the app uses ARV.</div>
+
+    <label>Payment Type</label>
+    <select id="sf_type">
+      <option value="interestOnlyBalloon">Interest-Only + Balloon</option>
+      <option value="amortizing">Amortizing (Principal + Interest)</option>
+    </select>
+
+    <label>Down Payment % (ex: 0.20)</label>
+    <input id="sf_down" type="number" step="0.01" placeholder="0.20">
+
+    <label>Annual Interest Rate (ex: 0.09)</label>
+    <input id="sf_rate" type="number" step="0.01" placeholder="0.09">
+
+    <label>Term (months)</label>
+    <input id="sf_term" type="number" placeholder="24">
+  </div>
+
+  <div class="card">
+    <h2>Seller Financing — Results</h2>
+
+    <div class="kpi">Seller Price Used<br><strong id="sfPriceUsed">$0</strong></div>
+    <div class="kpi">Down Payment (Immediate Cash)<br><strong id="sfDownCash">$0</strong></div>
+    <div class="kpi">Loan Amount (Note)<br><strong id="sfLoan">$0</strong></div>
+    <div class="kpi">Monthly Payment / Monthly Interest<br><strong id="sfMonthly">$0</strong></div>
+    <div class="kpi">Total Interest Over Term<br><strong id="sfTotalInterest">$0</strong></div>
+    <div class="kpi">Total Cash Received<br><strong id="sfTotalCash">$0</strong></div>
+  </div>
+
+  <div class="card">
+    <h2>Monthly Schedule (Seller Financing)</h2>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Payment</th>
+            <th>Interest</th>
+            <th>Principal</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody id="sf_table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Stress Test (Default Scenario)</h2>
+
+    <label>Default at Month (ex: 6 = stops before paying month 6)</label>
+    <input id="default_month" type="number" placeholder="6">
+
+    <label>Estimated Foreclosure Cost</label>
+    <input id="foreclosure_cost" type="number" placeholder="15000">
+
+    <div class="kpi">Cash Received Before Default<br><strong id="st_cash">$0</strong></div>
+    <div class="kpi">Interest Collected Before Default<br><strong id="st_int">$0</strong></div>
+    <div class="kpi">Principal Paid Before Default<br><strong id="st_prin">$0</strong></div>
+    <div class="kpi">Remaining Balance at Default<br><strong id="st_balance">$0</strong></div>
+    <div class="kpi">Net Cash After Costs (Est.)<br><strong id="st_net">$0</strong></div>
+  </div>
+
 </div>
 
-<div class="card">
-<h2>3) Rehab</h2>
-<label>Rehab (worst case)</label>
-<input id="rehab" type="number" placeholder="55000">
+<!-- INVESTOR TAB -->
+<div id="tab_investor" class="tab">
+  <div class="card">
+    <h2>Investor Summary</h2>
+    <textarea id="summary" readonly></textarea>
+    <button class="primary" onclick="copySummary()">Copy</button>
+    <div class="muted">You can paste this summary into WhatsApp or email.</div>
+  </div>
 </div>
 
-<div class="card">
-<h2>4) Vente</h2>
-<label>Commission + closing (%)</label>
-<input id="sale_pct" type="number" step="0.01" placeholder="0.07">
-</div>
-
-<div class="card">
-<h2>Résultats</h2>
-
-<div class="kpi">
-Hard money loan<br>
-<strong id="hmLoan">$0</strong>
-</div>
-
-<div class="kpi">
-Total costs<br>
-<strong id="totalCosts">$0</strong>
-</div>
-
-<div class="kpi">
-Profit net<br>
-<strong id="profit">$0</strong>
-</div>
-
-</div>
-
-<div class="card">
-<h2>Résumé investisseur</h2>
-<textarea id="summary" readonly></textarea>
-<button class="primary" onclick="copySummary()">Copier</button>
+<!-- LENDER TAB -->
+<div id="tab_lender" class="tab">
+  <div class="card">
+    <h2>Lender Checklist (Draft)</h2>
+    <ul style="margin:0; padding-left:18px; line-height:1.5;">
+      <li>Loan term and extension options (cost, conditions)</li>
+      <li>Points and hidden fees</li>
+      <li>Rehab draw process and inspections</li>
+      <li>Prepayment penalty</li>
+      <li>Insurance, taxes, utilities responsibilities</li>
+      <li>Default clauses and triggers</li>
+      <li>Personal guarantee and carve-outs</li>
+      <li>Title, closing timeline, and fees</li>
+    </ul>
+  </div>
 </div>
 
 </main>
 
 <script>
 function money(x){
+  if (!Number.isFinite(x)) x = 0;
   return x.toLocaleString("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0});
+}
+function pct(x){
+  if (!Number.isFinite(x)) x = 0;
+  return (x*100).toFixed(1) + "%";
+}
+
+function pmt(P, annualRate, nMonths) {
+  const r = annualRate / 12;
+  if (r === 0) return P / nMonths;
+  return (P * r) / (1 - Math.pow(1 + r, -nMonths));
+}
+
+function buildSchedule({ price, downPct, annualRate, termMonths, type }) {
+  const down = price * downPct;
+  const loan = Math.max(0, price - down);
+
+  let balance = loan;
+  const r = annualRate / 12;
+
+  let payment = 0;
+  if (type === "amortizing") payment = pmt(loan, annualRate, termMonths);
+
+  const rows = [];
+  rows.push({ month: 0, payment: down, interest: 0, principal: 0, balance });
+
+  for (let m = 1; m <= termMonths; m++) {
+    const interest = balance * r;
+    let principal = 0;
+    let pay = 0;
+
+    if (type === "interestOnlyBalloon") {
+      pay = interest;
+      if (m === termMonths) {
+        principal = balance;
+        pay = interest + principal;
+        balance = 0;
+      }
+    } else {
+      pay = payment;
+      principal = Math.max(0, pay - interest);
+      balance = Math.max(0, balance - principal);
+      if (m === termMonths) balance = 0;
+    }
+
+    rows.push({ month: m, payment: pay, interest, principal, balance });
+    if (balance <= 0) break;
+  }
+  return { down, loan, payment, rows };
+}
+
+function stressDefault(rows, defaultMonth, foreclosureCost = 0) {
+  const paidRows = rows.filter(r => r.month >= 0 && r.month < defaultMonth);
+  const cashReceived = paidRows.reduce((s,r)=>s+r.payment,0);
+  const interestReceived = paidRows.reduce((s,r)=>s+r.interest,0);
+  const principalReceived = paidRows.reduce((s,r)=>s+r.principal,0);
+  const lastPaid = paidRows[paidRows.length-1];
+  const remainingBalance = lastPaid ? lastPaid.balance : rows[0].balance;
+
+  return {
+    cashReceived,
+    interestReceived,
+    principalReceived,
+    remainingBalance,
+    netCashAfterCosts: cashReceived - foreclosureCost
+  };
+}
+
+function showTab(which){
+  ["operator","investor","lender"].forEach(k=>{
+    document.getElementById("tab_"+k).classList.toggle("active", k===which);
+    document.getElementById("btn_"+k).classList.toggle("primary", k===which);
+    document.getElementById("btn_"+k).classList.toggle("secondary", k!==which);
+  });
 }
 
 function calc(){
-  const purchase = Number(document.getElementById("purchase").value||0);
-  const arv = Number(document.getElementById("arv").value||0);
-  const months = Number(document.getElementById("months").value||0);
-  const ltv = Number(document.getElementById("hm_ltv").value||0);
-  const rate = Number(document.getElementById("hm_rate").value||0);
-  const points = Number(document.getElementById("hm_points").value||0);
-  const rehab = Number(document.getElementById("rehab").value||0);
-  const salePct = Number(document.getElementById("sale_pct").value||0);
+  const purchase = +purchaseEl.value||0;
+  const arv = +arvEl.value||0;
+  const months = +monthsEl.value||0;
+  const ltv = +hm_ltv.value||0;
+  const rate = +hm_rate.value||0;
+  const points = +hm_points.value||0;
+  const rehab = +rehabEl.value||0;
+  const salePct = +sale_pct.value||0;
 
   const hmLoan = purchase * ltv;
   const interest = hmLoan * rate * (months/12);
@@ -187,35 +351,85 @@ function calc(){
   const totalCosts = purchase + rehab + interest + pointCost + saleCosts;
   const profit = arv - totalCosts;
 
-  document.getElementById("hmLoan").innerText = money(hmLoan);
-  document.getElementById("totalCosts").innerText = money(totalCosts);
-  document.getElementById("profit").innerText = money(profit);
+  hmLoanEl.textContent = money(hmLoan);
+  totalCostsEl.textContent = money(totalCosts);
+  profitEl.textContent = money(profit);
 
-  document.getElementById("summary").value =
+  const margin = arv>0 ? (arv-totalCosts)/arv : 0;
+  marginPctEl.textContent = pct(margin);
+  tightWarn.style.display = (margin < 0.25 && arv>0) ? "block" : "none";
+
+  const sfType = sf_type.value;
+  const sfDown = +sf_down.value||0.20;
+  const sfRate = +sf_rate.value||0.09;
+  const sfTerm = +sf_term.value||24;
+  const sfPrice = +sf_price.value || arv;
+
+  const schedule = buildSchedule({
+    price: sfPrice, downPct: sfDown, annualRate: sfRate, termMonths: sfTerm, type: sfType
+  });
+
+  const totalInterest = schedule.rows.reduce((s,r)=>s+r.interest,0);
+  const totalCash = schedule.rows.reduce((s,r)=>s+r.payment,0);
+
+  sfPriceUsed.textContent = money(sfPrice);
+  sfDownCash.textContent = money(schedule.down);
+  sfLoan.textContent = money(schedule.loan);
+  sfMonthly.textContent = money(sfType==="amortizing" ? schedule.payment : (schedule.loan*sfRate/12));
+  sfTotalInterest.textContent = money(totalInterest);
+  sfTotalCash.textContent = money(totalCash);
+
+  sf_table.innerHTML = schedule.rows.map(r=>`
+    <tr>
+      <td>${r.month}</td>
+      <td>${money(r.payment)}</td>
+      <td>${money(r.interest)}</td>
+      <td>${money(r.principal)}</td>
+      <td>${money(r.balance)}</td>
+    </tr>`).join("");
+
+  const defMonth = +default_month.value||0;
+  const fcCost = +foreclosure_cost.value||0;
+  if(defMonth>0){
+    const st = stressDefault(schedule.rows, defMonth, fcCost);
+    st_cash.textContent = money(st.cashReceived);
+    st_int.textContent = money(st.interestReceived);
+    st_prin.textContent = money(st.principalReceived);
+    st_balance.textContent = money(st.remainingBalance);
+    st_net.textContent = money(st.netCashAfterCosts);
+  }
+
+  summary.value =
 `DEAL SUMMARY
 
+Flip:
 Purchase: ${money(purchase)}
 ARV: ${money(arv)}
 Rehab: ${money(rehab)}
+Total Costs: ${money(totalCosts)}
+Net Profit: ${money(profit)}
+Margin: ${pct(margin)}
 
-Hard Money:
-Loan: ${money(hmLoan)}
-Rate: ${(rate*100).toFixed(1)}%
-Points: ${(points*100).toFixed(1)}%
-
-Total costs: ${money(totalCosts)}
-Net profit: ${money(profit)}
+Seller Financing:
+Seller Price: ${money(sfPrice)}
+Down Payment: ${money(schedule.down)}
+Loan Amount: ${money(schedule.loan)}
+Rate: ${(sfRate*100).toFixed(1)}%
+Term: ${sfTerm} months
+Total Interest: ${money(totalInterest)}
+Total Cash Received: ${money(totalCash)}
 
 Decision based on WORST CASE.`;
 }
 
-document.querySelectorAll("input").forEach(i=>i.addEventListener("input",calc));
+// cache elements
+const purchaseEl=purchase, arvEl=arv, monthsEl=months, rehabEl=rehab;
+const hmLoanEl=hmLoan, totalCostsEl=totalCosts, profitEl=profit, marginPctEl=marginPct;
 
-function copySummary(){
-  navigator.clipboard.writeText(document.getElementById("summary").value);
-  alert("Résumé copié");
-}
+document.querySelectorAll("input,select").forEach(el=>el.addEventListener("input",calc));
+calc();
 </script>
+
 <script>
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -223,5 +437,6 @@ if ("serviceWorker" in navigator) {
   });
 }
 </script>
+
 </body>
 </html>
