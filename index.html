@@ -1545,25 +1545,6 @@ Best regards,
 
 })();
 </script>
-setSectionHTML("section-deal", `
-  <div class="kpi">
-    Deal Overview<br>
-    <strong>${dealName || "Property / Project"}</strong>
-    <div class="muted">${cityState}</div>
-  </div>
-
-  <div class="row2">
-    <div class="kpi">Purchase Price<br><strong>${fmtUSD(flip.purchase)}</strong></div>
-    <div class="kpi">ARV / Sale Price<br><strong>${fmtUSD(flip.arv)}</strong></div>
-  </div>
-
-  <div class="row2">
-    <div class="kpi">Holding Period<br><strong>${flip.months || 0} months</strong></div>
-    <div class="kpi">Margin vs ARV (target ≥ 25%)<br><strong>${fmtPct(flip.margin)}</strong></div>
-  </div>
-
-  <div class="kpi">${signedText}</div>
-`);
 <style>
   .out-table {
     width: 100%;
