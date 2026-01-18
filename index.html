@@ -1564,3 +1564,163 @@ setSectionHTML("section-deal", `
 
   <div class="kpi">${signedText}</div>
 `);
+<style>
+  .out-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+  }
+  .out-table th,
+  .out-table td {
+    padding: 10px;
+    border-bottom: 1px solid #eef2f7;
+    font-size: 13px;
+    vertical-align: top;
+  }
+  .out-table th {
+    background: #f2f4f7;
+    font-weight: 700;
+    text-align: left;
+  }
+  .out-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    background: #111;
+    color: #fff;
+  }
+</style>
+
+<script>
+/* =========================
+   BLOC 3 — JV PARTNER ONLY
+   Buyer Relationship + Deal Flow + Legal Checklist
+   ========================= */
+
+(function () {
+  const STORAGE_KEY = "jvBuyerRelationship";
+  const DEFAULT_TYPE = "jv"; // jv | wholesale
+
+  function getType() {
+    return localStorage.getItem(STORAGE_KEY) || DEFAULT_TYPE;
+  }
+  function setType(v) {
+    localStorage.setItem(STORAGE_KEY, v);
+  }
+
+  function renderJVBlock() {
+    const profile = document.getElementById("outputProfile")?.value;
+    const container = document.getElementById("section-jv");
+    if (!container || profile !== "jv") return;
+
+    const type = getType();
+
+    const selectorHTML = `
+      <div class="kpi">
+        Buyer Relationship<br>
+        <strong class="out-badge">${
+          type === "jv" ? "Partnership (JV)" : "Assignment (Wholesale)"
+        }</strong>
+      </div>
+
+      <label style="margin-top:10px;">Select relationship type</label>
+      <select id="buyerTypeSelect">
+        <option value="jv" ${
+          type === "jv" ? "selected" : ""
+        }>Partnership (JV)</option>
+        <option value="wholesale" ${
+          type === "wholesale" ? "selected" : ""
+        }>Assignment (Wholesale)</option>
+      </select>
+    `;
+
+    const flowJV = `
+      <div class="kpi">Deal Flow — Partnership (JV)</div>
+      <table class="out-table">
+        <thead>
+          <tr><th>Step</th><th>Action</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Purchase agreement signed with seller</td><td>Deal is controlled</td></tr>
+          <tr><td>2</td><td>Assignability + inspection period included</td><td>Flexibility and protection</td></tr>
+          <tr><td>3</td><td>Buyer approached as a JV partner</td><td>Align capital and execution</td></tr>
+          <tr><td>4</td><td>JV agreement signed (roles, split, waterfall)</td><td>Rules defined before money moves</td></tr>
+          <tr><td>5</td><td>Closing → execution → profit distribution</td><td>Capital protected, performance paid last</td></tr>
+        </tbody>
+      </table>
+    `;
+
+    const flowWholesale = `
+      <div class="kpi">Deal Flow — Assignment (Wholesale)</div>
+      <table class="out-table">
+        <thead>
+          <tr><th>Step</th><th>Action</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Purchase agreement signed with seller</td><td>You control the contract</td></tr>
+          <tr><td>2</td><td>Assignability + inspection period confirmed</td><td>Legal right to assign</td></tr>
+          <tr><td>3</td><td>Deal marketed to buyers</td><td>You sell controlled contract rights</td></tr>
+          <tr><td>4</td><td>Assignment agreement signed</td><td>Assignment fee locked in</td></tr>
+          <tr><td>5</td><td>Paid at closing</td><td>No closing, no fee</td></tr>
+        </tbody>
+      </table>
+    `;
+
+    const checklistJV = `
+      <div class="kpi">Legal Checklist — JV Partnership</div>
+      <table class="out-table">
+        <tbody>
+          <tr><td>Purchase contract signed</td><td>⬜</td></tr>
+          <tr><td>Assignability clause included</td><td>⬜</td></tr>
+          <tr><td>Inspection / due diligence period active</td><td>⬜</td></tr>
+          <tr><td>JV agreement signed</td><td>⬜</td></tr>
+          <tr><td>Waterfall agreed (capital → pref → split)</td><td>⬜</td></tr>
+          <tr><td>Closing and escrow confirmed</td><td>⬜</td></tr>
+        </tbody>
+      </table>
+      <p class="muted"><strong>Rule:</strong> No contract = no leverage = no partnership.</p>
+    `;
+
+    const checklistWholesale = `
+      <div class="kpi">Legal Checklist — Assignment</div>
+      <table class="out-table">
+        <tbody>
+          <tr><td>Purchase contract signed</td><td>⬜</td></tr>
+          <tr><td>Assignability clause included</td><td>⬜</td></tr>
+          <tr><td>Inspection period active</td><td>⬜</td></tr>
+          <tr><td>Marketing started after contract</td><td>⬜</td></tr>
+          <tr><td>Assignment agreement signed</td><td>⬜</td></tr>
+          <tr><td>Paid at closing</td><td>⬜</td></tr>
+        </tbody>
+      </table>
+      <p class="muted"><strong>Rule:</strong> No contract = no leverage = no protection.</p>
+    `;
+
+    container.innerHTML = `
+      ${selectorHTML}
+      <div style="margin-top:12px;"></div>
+      ${type === "jv" ? flowJV : flowWholesale}
+      <div style="margin-top:12px;"></div>
+      ${type === "jv" ? checklistJV : checklistWholesale}
+    `;
+
+    document.getElementById("buyerTypeSelect").onchange = (e) => {
+      setType(e.target.value);
+      renderJVBlock();
+    };
+  }
+
+  // Hook safely into profile change
+  const prev = window.outputsOnProfileChange;
+  window.outputsOnProfileChange = function () {
+    if (typeof prev === "function") prev();
+    renderJVBlock();
+  };
+
+  window.addEventListener("load", renderJVBlock);
+})();
+</script>
